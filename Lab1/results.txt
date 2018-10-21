@@ -1,0 +1,198 @@
+1
+Error type A at Line 4: Unrecognized Identifiers '~'
+2
+Error type B at line 5: Syntax Errors
+Error type B at line 5: Missing "]"
+Error type B at line 6: Missing ";"
+3
+Program (1)
+  ExtDefList (1)
+    ExtDef (1)
+      Specifier (1)
+        TYPE
+      FunDec (1)
+        ID: inc
+        LP
+        RP
+      CompSt (2)
+        LC
+        DefList (3)
+          Def (3)
+            Specifier (3)
+              TYPE
+            DecList (3)
+              Dec (3)
+                VarDec (3)
+                  ID: i
+            SEMI
+        StmtList (4)
+          Stmt (4)
+            Exp (4)
+              Exp (4)
+                ID: i
+              ASSIGNOP
+              Exp (4)
+                Exp (4)
+                  ID: i
+                PLUS
+                Exp (4)
+                  INT: 1
+            SEMI
+        RC
+4
+Program (1)
+  ExtDefList (1)
+    ExtDef (1)
+      Specifier (1)
+        StructSpecifier (1)
+          STRUCT
+          OptTag (1)
+            ID: Complex
+          LC
+          DefList (3)
+            Def (3)
+              Specifier (3)
+                TYPE
+              DecList (3)
+                Dec (3)
+                  VarDec (3)
+                    ID: real
+                COMMA
+                DecList (3)
+                  Dec (3)
+                    VarDec (3)
+                      ID: image
+              SEMI
+          RC
+      SEMI
+    ExtDefList (5)
+      ExtDef (5)
+        Specifier (5)
+          TYPE
+        FunDec (5)
+          ID: main
+          LP
+          RP
+        CompSt (6)
+          LC
+          DefList (7)
+            Def (7)
+              Specifier (7)
+                StructSpecifier (7)
+                  STRUCT
+                  Tag (7)
+                    ID: Complex
+              DecList (7)
+                Dec (7)
+                  VarDec (7)
+                    ID: x
+              SEMI
+          StmtList (8)
+            Stmt (8)
+              Exp (8)
+                Exp (8)
+                  Exp (8)
+                    ID: y
+                  DOT
+                  ID: image
+                ASSIGNOP
+                Exp (8)
+                  FLOAT: 3.5
+              SEMI
+          RC
+5
+Program (1)
+  ExtDefList (1)
+    ExtDef (1)
+      Specifier (1)
+        TYPE
+      FunDec (1)
+        ID: main
+        LP
+        RP
+      CompSt (2)
+        LC
+        DefList (3)
+          Def (3)
+            Specifier (3)
+              TYPE
+            DecList (3)
+              Dec (3)
+                VarDec (3)
+                  ID: i
+                ASSIGNOP
+                Exp (3)
+                  INT: 83
+            SEMI
+          DefList (4)
+            Def (4)
+              Specifier (4)
+                TYPE
+              DecList (4)
+                Dec (4)
+                  VarDec (4)
+                    ID: j
+                  ASSIGNOP
+                  Exp (4)
+                    INT: 63
+              SEMI
+        RC
+6
+Error type B at line 3: Syntax Errors
+Error type B at line 3: Wrong DefList
+Error type B at line 4: Wrong DefList
+7
+Program (1)
+  ExtDefList (1)
+    ExtDef (1)
+      Specifier (1)
+        TYPE
+      FunDec (1)
+        ID: main
+        LP
+        RP
+      CompSt (2)
+        LC
+        DefList (3)
+          Def (3)
+            Specifier (3)
+              TYPE
+            DecList (3)
+              Dec (3)
+                VarDec (3)
+                  ID: i
+                ASSIGNOP
+                Exp (3)
+                  FLOAT: 0.000105
+            SEMI
+        RC
+8
+Error type B at line 3: Syntax Errors
+Error type B at line 3: Wrong DefList
+9
+Program (1)
+  ExtDefList (1)
+    ExtDef (1)
+      Specifier (1)
+        TYPE
+      FunDec (1)
+        ID: main
+        LP
+        RP
+      CompSt (2)
+        LC
+        DefList (7)
+          Def (7)
+            Specifier (7)
+              TYPE
+            DecList (7)
+              Dec (7)
+                VarDec (7)
+                  ID: i
+                ASSIGNOP
+                Exp (7)
+                  INT: 1
+            SEMI
+        RC
+10
+Error type B at line 8: Syntax Errors
