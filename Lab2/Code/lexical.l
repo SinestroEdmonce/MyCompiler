@@ -151,20 +151,20 @@ COMMENTS \/\/.*|(\/\*(([^*]*)|(([^*]*)[*]([^/]*)))\*\/)
     }
 {FLOATEXP} {
     float value = FloatExp_2_FloatCommon(yytext);
-    char content[64];
+    char content[128];
     memset(content, '\0', sizeof(content));
     sprintf(content, "%f", value); 
 
     yylval.tree_node = Node_Initializer("FLOAT", content, false);
     return FLOAT;
     }
-{FLOATCOMMON} { 
+{FLOATCOMMON} {
     yylval.tree_node = Node_Initializer("FLOAT", yytext, false);
     return FLOAT;
     }
 {INTHEX} {
     int value = Hex_2_Dec(yytext);
-    char content[64];
+    char content[128];
     memset(content, '\0', sizeof(content));
     sprintf(content, "%d", value);
 
@@ -173,7 +173,7 @@ COMMENTS \/\/.*|(\/\*(([^*]*)|(([^*]*)[*]([^/]*)))\*\/)
     }
 {INTOCT} { 
     int value = Oct_2_Dec(yytext);
-    char content[64];
+    char content[128];
     memset(content, '\0', sizeof(content));
     sprintf(content, "%d", value);
 

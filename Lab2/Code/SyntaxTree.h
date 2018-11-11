@@ -11,16 +11,28 @@ extern int yylineno;
 typedef struct Node {
     /* Name */
     char type[32]; 
-    /* Value */
-    char value[64];
+    /* Value, stored as string */
+    char value[128];
+
+    /* Value, stored as its own type */
+    union {
+        int int_value;
+        double double_value;
+    } value_as_its_type;
+    
+    /* Flag for real value,
+     * false for not float or int, true for float or int
+     */
+    bool is_real_value;
+
     /* Position */
     int linenum;
     /* Its children and its brothers */
     struct Node* child;
     struct Node* sibling;
     /* Flag for non-ternimal, 
-       false for ternimal, true for non-ternimal  
-    */
+     * false for ternimal, true for non-ternimal  
+     */
     bool is_non_ternmial;
 
 } TreeNode;

@@ -10,6 +10,19 @@ TreeNode* Node_Initializer(char* node_name, char* value_str, bool flag){
     strcpy(tmp->value, value_str);
     tmp->child = NULL;
     tmp->sibling = NULL;
+    tmp->is_real_value = false;
+    
+    /* Store the value as its own type */
+    if (strcmp(node_name, "FLOAT\0")==0){
+        double f_val = atof(value_str);
+        tmp->value_as_its_type.double_value = f_val;
+        tmp->is_real_value = true;
+    }
+    else if (strcmp(node_name, "INT\0")==0){
+        int i_val = atoi(value_str);
+        tmp->value_as_its_type.int_value = i_val;
+        tmp->is_real_value = true;
+    }
 
     /* Whether the node represent non-ternimal */
     if(strlen(value_str)>0){
@@ -74,8 +87,16 @@ bool Preorder_Traversal(TreeNode* cur_root, int layers){
         if(cur_root->is_non_ternmial==true)
             printf("%s (%d)\n", cur_root->type, cur_root->linenum);
         else{
-            if(strcmp(cur_root->type, "INT")==0 || strcmp(cur_root->type, "FLOAT")==0 || strcmp(cur_root->type, "ID")==0)
-                printf("%s: %s\n", cur_root->type, cur_root->value);
+            if(strcmp(cur_root->type, "INT")==0 || strcmp(cur_root->type, "FLOAT")==0 || strcmp(cur_root->type, "ID")==0){
+                if (cur_root->is_real_value == true){
+                    if (strcmp(cur_root->type, "INT")==0)
+                        printf("%s: %d\n", cur_root->type, cur_root->value_as_its_type.int_value);
+                    else
+                        printf("%s: %f\n", cur_root->type, cur_root->value_as_its_type.double_value);
+                }
+                else
+                    printf("%s: %s\n", cur_root->type, cur_root->value);
+            }
             else
                 printf("%s\n", cur_root->type);
         }
