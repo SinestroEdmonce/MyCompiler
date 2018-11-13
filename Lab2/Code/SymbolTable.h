@@ -1,6 +1,7 @@
 #ifndef __SYMBOLTABLE_H_
 #define __SYMBOLTABLE_H_
 
+#include<string.h>
 #include "SymbolType.h"
 
 typedef struct SymbolNode_ {
@@ -8,8 +9,8 @@ typedef struct SymbolNode_ {
      * Or a specific structure declaration
      */
     union {
-        Type* symbol_type;
-        StructureSymbol structure_symbol;
+        SymbolRecord* var_func_symbol;
+        StructureSymbol* structure_symbol;
     };
     /* Pointer list for open hashing, in order to solve the conflict*/
     struct SymbolNode_ *node_prev, *node_next;
@@ -29,31 +30,19 @@ typedef struct SymbolNode_ {
 unsigned int Hash_Method_PJW(char* name);
 
 /* A Function used to find out symbol nodes */
-SymbolNode* Find_Symbol(char* symbol_id);
+SymbolNode* Find_Var_Func_Symbol(char* symbol_id);
 
 /* A Function used to find out structure symbol nodes */
 StructureSymbol *Find_Structure_Symbol(char* structure_symbol_id);
 
-/* A Function used to insert a symbol node */
-bool Insert_Symbol(char* symbol_id, Type* symbol_type);
+/* A Function used to insert a variable symbol node */
+bool Insert_Var_Symbol(char* symbol_id, Type* symbol_type);
 
 /* A Function used to insert a function symbol node */
 bool Insert_Func_Symbol(char* func_symbol_id, Type* symbol_type, TreeNode* tree_node);
 
 /* A Function used to insert a structure symbol node */
 bool Insert_Structure_Symbol(char* structure_symbol_id, Structure* structure);
-
-/* A Function used to store a new scope in the stack */
-void Push_Scope();
-
-/* A Function used to pop out a scope in the stack */
-void Pop_Scope();
-
-// /* A Function used to TODO */
-// void Set_Declared_Scope();
-
-// /* A Function used to TODO */
-// void Unset_Declared_Scope();
 
 /* A Function used to delete a symbol node in hashtable */
 SymbolNode* Delete_Node_In_Hashtable(SymbolNode* symbol_node);
@@ -67,6 +56,18 @@ SymbolNode* Delete_Node_In_Scopestack_List(SymbolNode* symbol_node);
 bool delete_symbol(char *symbol_id);
 
 // /* A Function used to TODO */
+// void Set_Declared_Scope();
+
+// /* A Function used to TODO */
+// void Unset_Declared_Scope();
+
+// /* A Function used to TODO */
 // void Check_Declared_Func();
+
+/* A Function used to store a new scope in the stack */
+void Push_Scope();
+
+/* A Function used to pop out a scope in the stack */
+void Pop_Scope();
 
 #endif
