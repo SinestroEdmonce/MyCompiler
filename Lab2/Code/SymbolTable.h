@@ -2,6 +2,7 @@
 #define __SYMBOLTABLE_H_
 
 #include<string.h>
+#include<assert.h>
 #include "SymbolType.h"
 
 typedef struct SymbolNode_ {
@@ -21,8 +22,8 @@ typedef struct SymbolNode_ {
 /* Maximum number of embedded blocks */
 #define MAX_SCOPE_NUM 32
 /* Used for disgtinguishing global variables (etc.) and local or just-declared one */
-#define GLOBAL 0
-#define DECLARED (MAX_SCOPE_NUM)
+#define IMPLEMENTED 0
+#define DECLARED_ONLY (MAX_SCOPE_NUM)
 /* Maximum length of a hash table */
 #define HASHTABLE_LENGTH 0x3fff
 
