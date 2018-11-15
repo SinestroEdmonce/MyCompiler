@@ -23,7 +23,7 @@ unsigned int Hash_Method_PJW(char* name){
 }
 
 /* Look up a specific VARIABLE or FUNCTION symbol */
-SymbolNode* Find_Var_Func_Symbol(char* symbol_id){
+SymbolRecord* Find_Var_Func_Symbol(char* symbol_id){
     /* Obtain hash value */
     unsigned int loc_index = Hash_Method_PJW(symbol_id);
 
@@ -221,4 +221,105 @@ bool Insert_Structure_Symbol(char* structure_symbol_id, Structure* structure){
     strcpy(structure_symbol->structure_name, structure_symbol_id);
 
     return Insert_Structure_Symbol_Node(structure_symbol);
+}
+
+/* Delete a head node */
+bool Delete_Head_Node(SymbolNode** head_node){
+    if (*head_node == NULL)
+        return true;
+    else{
+       if ((*head_node)->node_next == NULL){
+           free((*head_node));
+           (*head_node) = NULL;
+           return true;
+        }
+        else{
+            SymbolNode* tmp = (*head_node)->node_next;
+            free((*head_node));
+            (*head_node) = tmp;
+            (*head_node)->node_prev = NULL;
+            return true;
+        }
+    }
+}
+
+/* Delete a symbol node in var_func hashtable */
+bool Delete_Node_In_Var_Func_Hashtable(SymbolNode* symbol_node){
+    unsigned int head_loc_index = Hash_Method_PJW(symbol_node->var_func_symbol->record_name);
+    SymbolNode** head_node = &var_func_hashtable[head_loc_index];
+
+    if ((*head_node) == symbol_node){
+        return Delete_Head_Node(head_node);
+    }
+    else{
+        SymbolNode* pt = (*head_node);
+        while(pt != symbol_node)
+            pt = pt->node_next;
+        
+        /* Reconnect the nodes */
+        pt->node_prev->node_next = pt->node_next;
+        pt->node_next->node_prev = pt->node_prev;
+
+        free(pt);
+        pt = NULL;
+    }
+}
+
+/* Delete a symbol node in structrue hashtable */
+bool Delete_Node_In_Structure_Hashtable(SymbolNode* symbol_node){
+    unsigned int head_loc_index = Hash_Method_PJW(symbol_node->structure_symbol->structure_name);
+    SymbolNode** head_node = &structure_hashtable[head_loc_index];
+
+    if ((*head_node) == symbol_node){
+        return Delete_Head_Node(head_node);
+    }
+    else{
+        SymbolNode* pt = (*head_node);
+        while(pt != symbol_node)
+            pt = pt->node_next;
+        
+        /* Reconnect the nodes */
+        pt->node_prev->node_next = pt->node_next;
+        pt->node_next->node_prev = pt->node_prev;
+
+        free(pt);
+        pt = NULL;
+        return true;
+    }
+}
+
+/* Delete a symbol node in scope stack */
+bool Delete_Node_In_Scopestack_List(SymbolNode* symbol_node){
+    SymbolNode** head_node = &symbol_scope_stack[symbol_node->var_func_symbol->scope_level];
+
+    if ((*head_node) == symbol_node){
+        if ((*head_node) == NULL)
+            return true;
+        
+        if ((*head_node)->node_next != NULL){
+            SymbolNode* tmp = (*head_node)->node_next;
+            free((*head_node));
+            (*head_node) = tmp;
+            (*head_node)->node_prev = NULL;
+            return true;
+        }
+        else{
+            free((*head_node));
+            (*head_node) = NULL;
+            return true;
+        }
+    }
+    else{
+        SymbolNode* pt = (*head_node);
+        while(pt != symbol_node)
+            pt = pt->node_next;
+        
+        /* Reconnect the nodes */
+        pt->node_prev->node_next = pt->node_next;
+        pt->node_next->node_prev = pt->node_prev;
+
+        free(pt);
+        pt = NULL;
+        return true;
+    }
 }

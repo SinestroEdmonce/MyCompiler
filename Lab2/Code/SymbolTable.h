@@ -31,7 +31,7 @@ typedef struct SymbolNode_ {
 unsigned int Hash_Method_PJW(char* name);
 
 /* A Function used to find out symbol nodes */
-SymbolNode* Find_Var_Func_Symbol(char* symbol_id);
+SymbolRecord* Find_Var_Func_Symbol(char* symbol_id);
 
 /* A Function used to find out structure symbol nodes */
 StructureSymbol* Find_Structure_Symbol(char* structure_symbol_id);
@@ -46,15 +46,18 @@ bool Insert_Func_Symbol(char* func_symbol_id, Type* symbol_type, TreeNode* tree_
 bool Insert_Structure_Symbol(char* structure_symbol_id, Structure* structure);
 
 /* A Function used to delete a symbol node in hashtable */
-SymbolNode* Delete_Node_In_Hashtable(SymbolNode* symbol_node);
+bool Delete_Node_In_Var_Func_Hashtable(SymbolNode* symbol_node);
+
+/* A Function used to delete a structure symbol node in hashtable */
+bool Delete_Node_In_Structure_Hashtable(SymbolNode* symbol_node);
 
 /* A Function used to  delete a symbol node in scope stack list,
  * which simply links all symbol nodes that exist in the same scope together
  */
-SymbolNode* Delete_Node_In_Scopestack_List(SymbolNode* symbol_node);
+bool Delete_Node_In_Scopestack_List(SymbolNode* symbol_node);
 
 /* A Function used to delete symbols */ 
-bool delete_symbol(char *symbol_id);
+bool Delete_Symbol(char *symbol_id);
 
 // /* A Function used to TODO */
 // void Set_Declared_Scope();
