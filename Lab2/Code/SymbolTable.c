@@ -53,22 +53,91 @@ StructureSymbol *Find_Structure_Symbol(char* structure_symbol_id){
         return NULL;
 }
 
+/* Look up the scope stack to find the symbole node */
+SymbolNode* Find_Node_in_Scope(SymbolRecord* symbol_record, int scope){
+    SymbolNode* pt = var_func_hashtable[Hash_Method_PJW(symbol_record->record_name)];
+
+    while(pt != NULL && pt->var_func_symbol->scope_level == scope){
+        if (strcmp(pt->var_func_symbol->record_name, symbol_record->record_name) == 0)
+            return pt;
+        pt=pt->node_next;
+    }
+    return NULL;
+}
+
+/* Insert valid node into the hashtable */
+bool Insert_Node_to_Hashtable(SymbolNode* symbol_node){
+    /* Locate the node head position */
+    unsigned int head_loc_index = Hash_Method_PJW(symbol_node->var_func_symbol->record_name);
+    SymbolNode* node_head = var_func_hashtable[head_loc_index];
+
+    if (node_head == NULL){
+        node_head = symbol_node;
+        node_head->node_prev = NULL;
+        node_head->node_next = NULL;
+    }
+    else{
+        /* Locate the inserted node position and insert the node in front of the head */
+        SymbolNode* tmp = node_head;
+        node_head = symbol_node;
+        node_head->node_next = tmp;
+        node_head->node_prev = NULL;
+        tmp->node_prev = node_head;
+    }
+
+    /* Judge whether the node has been successfully inserted */
+    if (strcmp(var_func_hashtable[head_loc_index]->var_func_symbol->record_name, symbol_node->var_func_symbol->record_name) == 0)
+        return true;
+    else
+        return false;
+}
+
+/* Insert valid node into the stack */
+bool Insert_Node_to_Scopestack(SymbolNode* symbol_node, const int scope){
+    /* Locate the node head position */
+    SymbolNode* node_head = symbol_scope_stack[scope];
+
+    if (node_head == NULL){
+        node_head = symbol_node;
+        node_head->stack_next = NULL;
+        node_head->stack_prev = NULL;
+    }
+    else{
+        /* Locate the inserted node position and insert the node in front of the head */
+        SymbolNode* tmp = node_head;
+        node_head = symbol_node;
+        node_head->stack_next = tmp;
+        node_head->stack_prev = NULL;
+        tmp->node_prev = node_head;
+    }
+
+    /* Judge whether the node has been successfully inserted */
+    if (strcmp(symbol_scope_stack[scope]->var_func_symbol->record_name, symbol_node->var_func_symbol->record_name) == 0)
+        return true;
+    else
+        return false;
+}
+
+
 bool Insert_Var_Func_Symbol_Node(SymbolRecord* symbol_record){
-    /* TODO:
-     * find wether the symbol has already been declared and defined in the same scope
+    /* Find wether the symbol has already been declared and defined in the same scope
      */
+    if (Find_Node_in_Scope(symbol_record, scope_level) != NULL)
+        return false;
 
     unsigned int loc_index_inserted = Hash_Method_PJW(symbol_record->record_name);
     SymbolNode* symbol_node = malloc(sizeof(SymbolNode));
     symbol_node->var_func_symbol = symbol_record;
     
-    /* TODO:
-     * 1.insert symbol node into hashtable
+    /* 1.insert symbol node into hashtable
      * 2.insert symbol node into stack
      */
-
-    
-    return true;
+    if (Insert_Node_to_Hashtable(symbol_node) && Insert_Node_to_Scopestack(symbol_node, scope_level))
+        return true;
+    else{
+        printf("%s -> %s\n", symbol_record->record_name, "Failed to insert into hashtable");
+        return false;
+    }
 }
 
 /* Insert a variable symbol node */
