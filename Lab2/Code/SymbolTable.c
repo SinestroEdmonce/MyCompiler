@@ -39,7 +39,7 @@ SymbolNode* Find_Var_Func_Symbol(char* symbol_id){
 }
 
 /* Look up a specific STRUCTURE symbol */
-StructureSymbol *Find_Structure_Symbol(char* structure_symbol_id){
+StructureSymbol* Find_Structure_Symbol(char* structure_symbol_id){
     unsigned int loc_index = Hash_Method_PJW(structure_symbol_id);
 
     SymbolNode* pt = structure_hashtable[loc_index];
@@ -53,7 +53,7 @@ StructureSymbol *Find_Structure_Symbol(char* structure_symbol_id){
         return NULL;
 }
 
-/* Look up the scope stack to find the symbole node */
+/* Look up the hashtable to find out whether there are two same variables or functions in the same scope */
 SymbolNode* Find_Node_in_Scope(SymbolRecord* symbol_record, int scope){
     SymbolNode* pt = var_func_hashtable[Hash_Method_PJW(symbol_record->record_name)];
 
@@ -65,8 +65,8 @@ SymbolNode* Find_Node_in_Scope(SymbolRecord* symbol_record, int scope){
     return NULL;
 }
 
-/* Insert valid node into the hashtable */
-bool Insert_Node_to_Hashtable(SymbolNode* symbol_node){
+/* Insert valid node into the var_func hashtable */
+bool Insert_Node_to_Var_Func_Hashtable(SymbolNode* symbol_node){
     /* Locate the node head position */
     unsigned int head_loc_index = Hash_Method_PJW(symbol_node->var_func_symbol->record_name);
     SymbolNode* node_head = var_func_hashtable[head_loc_index];
@@ -118,21 +118,20 @@ bool Insert_Node_to_Scopestack(SymbolNode* symbol_node, const int scope){
         return false;
 }
 
-
+/* Generall inserting method for VARIABLE and FUNCTION */
 bool Insert_Var_Func_Symbol_Node(SymbolRecord* symbol_record){
     /* Find wether the symbol has already been declared and defined in the same scope
      */
-    if (Find_Node_in_Scope(symbol_record, scope_level) != NULL)
+    if (Find_Node_in_Scope(symbol_record, symbol_record->scope_level) != NULL)
         return false;
 
-    unsigned int loc_index_inserted = Hash_Method_PJW(symbol_record->record_name);
     SymbolNode* symbol_node = malloc(sizeof(SymbolNode));
     symbol_node->var_func_symbol = symbol_record;
     
     /* 1.insert symbol node into hashtable
      * 2.insert symbol node into stack
      */
-    if (Insert_Node_to_Hashtable(symbol_node) && Insert_Node_to_Scopestack(symbol_node, scope_level))
+    if (Insert_Node_to_Hashtable(symbol_node) && Insert_Node_to_Scopestack(symbol_node, symbol_node->var_func_symbol->scope_level))
         return true;
     else{
         printf("%s -> %s\n", symbol_record->record_name, "Failed to insert into hashtable");
@@ -170,7 +169,56 @@ bool Insert_Func_Symbol(char* func_symbol_id, Type* symbol_type, TreeNode* tree_
     return Insert_Var_Func_Symbol_Node(func_symbol_record);
 }
 
+/* Insert valid node into the structure hashtable */
+bool Insert_Node_to_Structure_Hashtable(SymbolNode* symbol_node){
+    /* Locate the head node in structure hashtable */
+    unsigned int head_loc_index = Hash_Method_PJW(symbol_node->structure_symbol->structure_name);
+    SymbolNode* node_head = structure_hashtable[head_loc_index];
+
+    if (node_head == NULL){
+        node_head = symbol_node;
+        node_head->node_next = NULL;
+        node_head->node_prev = NULL;
+    }
+    else{
+        SymbolNode* temp = node_head;
+        node_head = symbol_node;
+        node_head->node_next = temp;
+        node_head->node_prev = NULL;
+        temp->node_prev = node_head;
+    }
+
+    if (strcmp(structure_hashtable[head_loc_index]->structure_symbol->structure_name, symbol_node->structure_symbol->structure_name) != 0)
+        return false;
+    else 
+        return true;
+}
+
+bool Insert_Structure_Symbol_Node(StructureSymbol* structure_symbol){
+    /* Find wether the structure has already been declared and defined in the code
+     */
+    if(Find_Structure_Symbol(structure_symbol->structure_name) != NULL)
+        return false;
+
+    unsigned int loc_index_inserted = Hash_Method_PJW(structure_symbol->structure_name);
+    SymbolNode* symbol_node = malloc(sizeof(SymbolNode));
+    symbol_node->structure_symbol = structure_symbol;
+    
+    /* 1.insert structure symbol node into hashtable
+     */
+    if (Insert_Node_to_Structure_Hashtable(symbol_node))
+        return true;
+    else{
+        printf("%s -> %s\n", structure_symbol->structure_name, "Failed to insert into hashtable");
+        return false;
+    }
+}
+
 /* Insert a structure symbol node */
 bool Insert_Structure_Symbol(char* structure_symbol_id, Structure* structure){
+    StructureSymbol* structure_symbol = malloc(sizeof(StructureSymbol));
+    structure_symbol->structure_type = structure;
+    strcpy(structure_symbol->structure_name, structure_symbol_id);
 
+    return Insert_Structure_Symbol_Node(structure_symbol);
 }

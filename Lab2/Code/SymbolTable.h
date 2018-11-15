@@ -34,7 +34,7 @@ unsigned int Hash_Method_PJW(char* name);
 SymbolNode* Find_Var_Func_Symbol(char* symbol_id);
 
 /* A Function used to find out structure symbol nodes */
-StructureSymbol *Find_Structure_Symbol(char* structure_symbol_id);
+StructureSymbol* Find_Structure_Symbol(char* structure_symbol_id);
 
 /* A Function used to insert a variable symbol node */
 bool Insert_Var_Symbol(char* symbol_id, Type* symbol_type);
