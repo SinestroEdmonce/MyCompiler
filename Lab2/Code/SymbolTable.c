@@ -7,9 +7,14 @@
  */
 SymbolNode* var_func_hashtable[HASHTABLE_LENGTH + 1];
 SymbolNode* structure_hashtable[HASHTABLE_LENGTH + 1];
-// Note: '+1' is for DECLARED_ONLY
+/* Note: 33rd for DECLARED_ONLY */
 SymbolNode* symbol_scope_stack[MAX_SCOPE_NUM + 1]; 
-static int scope_level = 0; 
+
+/* scope_level: record the number of the scope embedding
+ * scope_backup: record the current scope level when encounting a declared but not defined functions and restore the scope level later
+ */
+static int scope_level = 0;
+static int scope_backup = -1; 
 
 /* Recommended hashing method in the given guidance */
 unsigned int Hash_Method_PJW(char* name){
@@ -131,7 +136,8 @@ bool Insert_Var_Func_Symbol_Node(SymbolRecord* symbol_record){
     /* 1.insert symbol node into hashtable
      * 2.insert symbol node into stack
      */
-    if (Insert_Node_to_Hashtable(symbol_node) && Insert_Node_to_Scopestack(symbol_node, symbol_node->var_func_symbol->scope_level))
+    if (Insert_Node_to_Var_Func_Hashtable(symbol_node) 
+        && Insert_Node_to_Scopestack(symbol_node, symbol_node->var_func_symbol->scope_level))
         return true;
     else{
         printf("%s -> %s\n", symbol_record->record_name, "Failed to insert into hashtable");
@@ -321,5 +327,96 @@ bool Delete_Node_In_Scopestack_List(SymbolNode* symbol_node){
         free(pt);
         pt = NULL;
         return true;
+    }
+}
+
+/* Delete a VARIABLE or FUCTION symbol */
+bool Delete_Var_Func_Symbol(char* symbol_id) {
+    SymbolNode* pt = var_func_hashtable[Hash_Method_PJW(symbol_id)];
+
+    while (strcmp(pt->var_func_symbol->record_name, symbol_id) != 0) {
+        pt = pt->node_next;
+    }
+    
+    return (Delete_Node_In_Var_Func_Hashtable(pt)) && (Delete_Node_In_Scopestack_List(pt));
+}
+
+/* Delete a STRUCTURE symbol */
+bool Delete_Structure_Symbol(char* symbol_id) {
+    SymbolNode* pt = structure_hashtable[Hash_Method_PJW(symbol_id)];
+
+    while (strcmp(pt->structure_symbol->structure_name, symbol_id) != 0) {
+        pt = pt->node_next;
+    }
+    
+    return Delete_Node_In_Structure_Hashtable(pt);
+}
+
+/* Increase the scope level */
+void Push_Scope() {
+    scope_level = scope_level+1;
+    assert(scope_level < MAX_SCOPE_NUM);
+};
+
+/* Scope popping should be treated carfully enough.
+ *
+ * Since there exists a situation that two nodes has the same hashing value in var-func hashtable,
+ * they will be stored in the same list at the same position in the hashtable. Plus, these two nodes coincidentally at the same scop level.
+ * So when it comes to deleting the scope level where this situation stays, the operation will be complex.
+ * 
+ * Firstly, you should know whether the node you are going to delete is the first node in hashing list.
+ * Because we inserted every node in the list as the first one, 
+ * it cannot be possible for nodes of other scope levels to exist in front of the node when you pop the most embedding scope.
+ * 
+ * If the node that is going to be deleted is not the first one, 
+ * which means there exist some other nodes that stay in the same scope as it, 
+ * you had better record the node and delete those other nodes first.
+ * 
+ * Secondly, when you delete all the nodes that are not only at the first of the hashing list but also in the scope to be popped,
+ * you will be back to dealing with the nodes that have been recorded. 
+ * 
+ * After all the operations have been perfectly done, the scope will have been popped.
+ */
+void Pop_Scope() {
+    SymbolNode* head_node = symbol_scope_stack[scope_level];
+
+    while (head_node != NULL) {
+        SymbolNode* pt = head_node;
+        SymbolNode* first = pt;
+        while (pt != NULL) {
+            SymbolNode* tmp = pt->stack_next;
+            /* if the node is the first one in var-func hashtable, 
+             * which means that it is the deepest embedding scope,
+             * then it can be deleted. 
+             * Otherwise, there might be some mistakes and some other deeper nodes should be deleted first.
+             */
+            if (pt->node_prev == NULL) { 
+                if (first == pt) 
+                    first = tmp;
+                Delete_Var_Func_Symbol(pt->var_func_symbol->record_name);
+            }
+            pt = tmp;
+        }
+        head_node = first;
+    }
+    scope_level = scope_level+1;
+    assert(scope_level > -1);
+};
+
+void Set_Scope_Declared_Only() {
+    scope_backup = scope_level;
+    scope_level = DECLARED_ONLY;
+}
+
+void Reset_Scope() {
+    scope_level = scope_backup;
+}
+
+void Check_Declared_Func() {
+    SymbolNode* pt = symbol_scope_stack[DECLARED_ONLY];
+
+    while (pt != NULL) {
+        Report_Errors(18, pt->var_func_symbol->tree_node);
+        pt = pt->stack_next;
     }
 }
