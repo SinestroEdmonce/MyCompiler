@@ -10,7 +10,7 @@ extern bool lex_error;
 extern bool syn_error;
 
 /* Variable that determines debugging */
-#define YYDEBUG 1
+//#define YYDEBUG 1
 
 int main(int argc, char** argv){
     if(argc > 1){
