@@ -8,7 +8,7 @@
 
 extern int yylineno;
 
-typedef struct Node {
+typedef struct Node_ {
     /* Name */
     char type[32]; 
     /* Value, stored as string */
@@ -28,8 +28,8 @@ typedef struct Node {
     /* Position */
     int linenum;
     /* Its children and its brothers */
-    struct Node* child;
-    struct Node* sibling;
+    struct Node_* child;
+    struct Node_* sibling;
     /* Flag for non-ternimal, 
      * false for ternimal, true for non-ternimal  
      */
@@ -42,6 +42,7 @@ TreeNode* root;
 TreeNode* Node_Initializer(char* node_name, char* value_str, bool flag);
 TreeNode* Get_First_Child(TreeNode* parent);
 TreeNode* Get_First_Sibling(TreeNode* brother);
+TreeNode* Get_Nth_Child(TreeNode* parent, int num);
 bool Insert_Child(TreeNode* parent, TreeNode* child);
 bool Insert_Sibling(TreeNode* brother, TreeNode* young);
 bool Preorder_Traversal(TreeNode* cur_root, int layers);

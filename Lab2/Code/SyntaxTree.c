@@ -36,15 +36,34 @@ TreeNode* Node_Initializer(char* node_name, char* value_str, bool flag){
 }
 
 TreeNode* Get_First_Child(TreeNode* parent){
-    if(parent!=NULL)
+    if (parent!=NULL)
         return parent->child;
     else
         return NULL;
 }
 
 TreeNode* Get_First_Sibling(TreeNode* brother){
-    if(brother!=NULL)
+    if (brother!=NULL)
         return brother->sibling;
+    else
+        return NULL;
+}
+
+TreeNode* Get_Nth_Child(TreeNode* parent, int num){
+    if (parent == NULL)
+        return NULL;
+
+    TreeNode* pt = parent->child;
+    if (pt != NULL){
+        int idx = 1;
+        for (; idx<num, pt!=NULL; idx++)
+            pt = pt->sibling;
+        
+        if (pt != NULL)
+            return pt;
+        else
+            return NULL;
+    }
     else
         return NULL;
 }
