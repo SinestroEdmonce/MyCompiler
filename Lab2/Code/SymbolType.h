@@ -14,7 +14,7 @@ struct FieldList_;
 
 /* Structure for different fields in programs */
 typedef struct FieldList_ {
-    char* field_name[128];
+    char* field_name;
     /* Type of the field */
     struct Type_* field_type;
     /* prev: for convenience of deletion
@@ -42,7 +42,7 @@ typedef struct Structure_ {
 typedef struct FuncParamList_ {
     struct Type_* param_type;
     /* Name of the parameter */
-    char param_name[128];
+    char* param_name;
     /* prev: for convenience of deletion
      * next: for next parameters
      */
@@ -84,14 +84,14 @@ typedef struct FuncArgsList_ {
 } FuncArgsList;
 
 typedef struct StructureSymbol_ {
-    char structure_name[128];
+    char* structure_name;
     struct Structure_* structure_type;
 } StructureSymbol;
 
 /* Structure for symbols recorded in the symbol table */
 typedef struct SymbolRecord_ {
     /* Record name */
-    char record_name[128];
+    char* record_name;
     /* Scope level */
     int scope_level;
     /* Type of scope or variables*/

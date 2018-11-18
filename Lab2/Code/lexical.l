@@ -192,6 +192,6 @@ COMMENTS \/\/.*|(\/\*(([^*]*)|(([^*]*)[*]([^/]*)))\*\/)
     ;
     }
 . {
-    printf("Error type A at Line %d: Unrecognized Identifiers \'%s\'\n", yylineno, yytext, false);
+    printf("Error type A at Line %d: Unrecognized Identifiers \'%s\'\n", yylineno, yytext);
     lex_error = true;
     }

@@ -152,7 +152,7 @@ bool Insert_Var_Symbol(char* var_symbol_id, Type* symbol_type){
     SymbolRecord* var_symbol_record = malloc(sizeof(SymbolRecord));
     var_symbol_record->scope_level = scope_level;
     var_symbol_record->symbol_type = symbol_type;
-    strcpy(var_symbol_record, var_symbol_id);
+    strcpy(var_symbol_record->record_name, var_symbol_id);
 
     return Insert_Var_Func_Symbol_Node(var_symbol_record);
 }

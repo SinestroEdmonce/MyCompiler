@@ -5,11 +5,10 @@
     #include "SyntaxTree.h"
     #include "lex.yy.c"
     #define MAXLENGTH 128
-
 %}
 
 %union{
-    struct TreeNode* tree_node;
+    TreeNode* tree_node;
 }
 
 /* Declared tokens */
@@ -208,7 +207,7 @@ Args: Exp COMMA Args {$$=Node_Initializer("Args", "", true); Insert_Child($$, $1
     ;
 %%
 
-yyerror(char *msg){
+int yyerror(char *msg){
         
     if(syn_error==true && strcmp(msg,"syntax error") != 0){
         if(last_syn_error_lineno==-1){
@@ -224,4 +223,5 @@ yyerror(char *msg){
         fprintf(stderr, "Error type B at line %d: %s\n", yylineno, "Syntax Errors");
     }
 
+    return 0;
 }
