@@ -5,13 +5,14 @@
 #include<string.h>
 #include<stdlib.h>
 #include<stdbool.h>
+#include<assert.h>
 #include "SyntaxTree.h"
 #include "ErrorReport.h"
 #include "SymbolTable.h"
 
 
 #define CHILD(tree_node, num) \
-    (num == 1?tree_node->child:Get_Nth_Child(tree_node, nnum))
+    (num == 1?tree_node->child:Get_Nth_Child(tree_node, num))
 #define TYPE_STR_LENGTH 128
 
 /* Obtain the information of the given type_id */
