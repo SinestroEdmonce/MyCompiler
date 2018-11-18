@@ -55,7 +55,7 @@ typedef struct Type_ {
     enum {BASIC, ARRAY, STRUCTURE, FUNCTION, UNKNOWN} kind;
     /* Different types use different groups of variables */
     union {
-        int basic;
+        enum {TYPE_INT, TYPE_FLOAT, TYPE_OTHERS} basic;
         struct {
             /* Array elments' type */
             struct Type_* elem;
@@ -63,7 +63,7 @@ typedef struct Type_ {
             struct ArraySizeList_* array_size;
         } array;
         /* Structure type */
-        struct Structure_ structure;
+        struct Structure_* structure;
         struct {
             /* Type of return value of a function */
             struct Type_* rtn;
@@ -99,5 +99,9 @@ typedef struct SymbolRecord_ {
     /* Syntax tree node for the scope of some functions */
     TreeNode* tree_node;
 } SymbolRecord;
+
+/* Create a node that belongs to BASIC */
+Type* Create_Type_Basic(char* basic_id);
+
 
 #endif
