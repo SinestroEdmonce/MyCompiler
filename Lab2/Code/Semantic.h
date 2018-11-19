@@ -33,10 +33,10 @@ void DFS_Extern_Declared_List(TreeNode* cur_root, Type* type_id);
 /* Deepth-first traversal for FunDec branch */
 void DFS_Func_Declared(TreeNode* cur_root, Type* rtn, bool declared_only);
 
-/* Deepth-first traversal TODO */
+/* Deepth-first traversal for VarList branch */
 FuncParamList* DFS_Var_List(TreeNode* cur_root);
 
-/* Deepth-first traversal TODO */
+/* Deepth-first traversal for ParamList branch */
 Type* DFS_Param_Declared(TreeNode* cur_root, char **symbol_id);
 
 /* Deepth-first traversal for VarDec branch */

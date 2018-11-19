@@ -59,7 +59,7 @@ char* DFS_Tag(TreeNode* cur_root){
 }
 
 /* Judge whethe two types are structure-equal to each other */
-bool Is_Type_Equal(const Type* type1_id, const Type* type2_id){
+bool Is_Type_Equal(Type* const type1_id, Type* const type2_id){
     if (type1_id == NULL || type2_id == NULL)
         return false;
 
@@ -141,12 +141,14 @@ Type* DFS_Var_Declared(TreeNode* cur_root, char **symbol_id, Type* type_id){
 
     head_node->size = CHILD(tree_node, 3)->value_as_its_type.int_value;
     head_node->next = NULL;
+    head_node->prev = NULL;
 
     tree_node = CHILD(tree_node, 1);
     while(strcmp(CHILD(tree_node, 1)->type, "VarDec") == 0) {
         ArraySizeList* next_node =malloc(sizeof(ArraySizeList));
         next_node->size = CHILD(tree_node, 3)->value_as_its_type.int_value;
         next_node->next = head_node;
+        next_node->prev = NULL;
         head_node = next_node;
         tree_node = CHILD(tree_node, 1);
     }
@@ -167,6 +169,7 @@ FieldList* DFS_Declared(TreeNode* cur_root, Type* type_id){
     FieldList* pt = malloc(sizeof(FieldList));
     pt->field_type = DFS_Var_Declared(CHILD(cur_root, 1), &(pt->field_name), type_id);
     pt->next = NULL;
+    pt->prev = NULL;
 
     if (func_ret_type == NULL){
         if (CHILD(cur_root, 3) != NULL)
@@ -196,8 +199,11 @@ FieldList* DFS_Declared_List(TreeNode* cur_root, Type* type_id){
 
     FieldList* pt = DFS_Declared(CHILD(cur_root, 1), type_id);
     if (CHILD(cur_root, 3) != NULL) {
-        if (pt != NULL) 
+        if (pt != NULL){
             pt->next = DFS_Declared_List(CHILD(cur_root, 3), type_id);
+            if(pt->next != NULL)
+                pt->next->prev = pt;
+        }
         else
             pt = DFS_Declared_List(CHILD(cur_root, 3), type_id);   
     }
@@ -234,6 +240,8 @@ FieldList* DFS_Defined_List(TreeNode* cur_root){
                 prev_node = prev_node->next;
 
             prev_node->next = DFS_Defined_List(CHILD(cur_root, 2));
+            if (prev_node->next != NULL)
+                prev_node->next->prev = prev_node;
         }
     }
     return pt;
@@ -316,22 +324,167 @@ Type* DFS_Specifier(TreeNode* cur_root){
 
 /* A deepth-first traversal method for searching the ExtDecList branch */
 void DFS_Extern_Declared_List(TreeNode* cur_root, Type* type_id){
+    assert(strcmp(cur_root->type, "ExtDecList") == 0);
 
+    char* symbol_id;
+    Type* var_type = DFS_Var_Declared(CHILD(cur_root, 1), &symbol_id, type_id);
+    if (Insert_Var_Symbol(symbol_id, var_type) == false) 
+        Report_Errors(3, cur_root);
+    
+    if (CHILD(cur_root, 3) != NULL)
+        DFS_Extern_Declared_List(CHILD(cur_root, 3), type_id);
 }
 
-/*  A deepth-first traversal method for searching the FunDec branch */
-void DFS_Func_Declared(TreeNode* cur_root, Type* rtn, bool declared_only){
+/* Judge whether two parameter lists are as same as each other */
+bool Is_Params_Equal(FuncParamList* const new, FuncParamList* const old){
+    FuncParamList* tmp_new = new;
+    FuncParamList* tmp_old = old;
 
+    while(tmp_old != NULL & tmp_new != NULL){
+        if (Is_Type_Equal(tmp_old->param_type, tmp_new->param_type) == false)
+            return false;
+        
+        tmp_new = tmp_new->next;
+        tmp_old = tmp_old->next;
+    }
+    if (tmp_old != NULL || tmp_new != NULL)
+        return false;
+    
+    return true;
+}
+
+/* A deepth-first traversal method for searching the ParamDec branch */
+Type* DFS_Param_Declared(TreeNode* cur_root, char **symbol_id){
+    assert(strcmp(cur_root->type, "ParamDec") == 0);
+
+    Type* param_type = DFS_Specifier(CHILD(cur_root, 1));
+
+    if (param_type == NULL)
+        return NULL;
+    
+    if (CHILD(cur_root, 2) != NULL)
+        param_type = DFS_Var_Declared(CHILD(cur_root, 2), symbol_id, param_type);
+    return param_type;
+}
+
+/* A deepth-first traversal method for searching the VarList branch */
+FuncParamList* DFS_Var_List(TreeNode* cur_root){
+    assert(strcmp(cur_root->type, "VarList") == 0);
+
+    FuncParamList* pt = malloc(sizeof(FuncParamList));
+    pt->param_type = DFS_Param_Declared(CHILD(cur_root, 1), &(pt->param_name));
+    pt->next = NULL;
+    pt->prev = NULL;
+
+    if (CHILD(cur_root, 3) != NULL){
+        pt->next = DFS_Var_List(CHILD(cur_root, 3));
+        if (pt->next != NULL)
+            pt->next->prev = NULL;
+    }
+    if (pt->param_type == NULL){
+        free(pt);
+    }
+    if (pt->param_type == NULL) {
+        FuncParamList* rtn = pt->next;
+        free(pt);
+        return rtn;
+    }
+    return pt;
+}
+
+/* A deepth-first traversal method for searching the FunDec branch */
+void DFS_Func_Declared(TreeNode* cur_root, Type* rtn, bool declared_only){
+    assert(strcmp(cur_root->type, "FunDec") == 0);
+
+    Type* func_type = malloc(sizeof(Type));
+    func_type->kind = FUNCTION;
+    func_type->func.rtn = rtn;
+    func_type->func.param_list = NULL;
+
+    // Obtain the ID of the function
+    char* func_id = DFS_Id(CHILD(cur_root, 1));
+
+    if (strcmp(CHILD(cur_root, 3)->type, "VarList") == 0){
+        func_type->func.param_list = DFS_Var_List(CHILD(cur_root, 3));
+
+        FuncParamList* pt = func_type->func.param_list;
+        while(pt != NULL){
+            Insert_Var_Symbol(pt->param_name, pt->param_type);
+            pt = pt->next;
+        }
+    }
+    if (declared_only == true){
+        Set_Scope_Declared_Only();
+
+        SymbolRecord* var_func_symbol = Find_Var_Func_Symbol(func_id);
+        if (var_func_symbol != NULL){
+            if (var_func_symbol->symbol_type->kind == FUNCTION){
+                FuncParamList* pt_new = func_type->func.param_list;
+                FuncParamList* pt_declared = var_func_symbol->symbol_type->func.param_list;
+
+                if (Is_Params_Equal(pt_new, pt_declared) == false)
+                    Report_Errors(19, cur_root);
+            }
+            else
+                Report_Errors(4, cur_root);
+        }
+        else
+            Insert_Func_Symbol(func_id, func_type, cur_root);
+        Reset_Scope();
+    }
+    else{
+        // If the function has been declared before, then remove the old declaration and add the new definition
+        SymbolRecord* var_func_symbol = Find_Var_Func_Symbol(func_id);
+        if (var_func_symbol != NULL && var_func_symbol->scope_level == DECLARED_ONLY){
+            FuncParamList* pt_declared = var_func_symbol->symbol_type->func.param_list;
+            FuncParamList* pt_new = func_type->func.param_list;
+
+            if (Is_Params_Equal(pt_new, pt_declared) == false)
+                Report_Errors(19, cur_root);
+            else
+                Delete_Var_Func_Symbol(func_id);
+        }
+        if (Insert_Func_Symbol(func_id, func_type, cur_root) == false)
+            Report_Errors(4, CHILD(cur_root, 1));
+    }
 }
 
 /*  A deepth-first traversal method for searching the CompSt branch */
 void DFS_CompSt(TreeNode* cur_root){
+    assert(strcmp(cur_root->type, "CompSt") == 0);
 
+    if (CHILD(cur_root, 2) != NULL && strcmp(CHILD(cur_root, 2)->type, "DefList") == 0)
+        DFS_Defined_List(CHILD(cur_root, 2));
+
+    if (CHILD(cur_root, 3) != NULL && strcmp(CHILD(cur_root, 3)->type, "StmtList") == 0)
+        DFS(CHILD(cur_root, 3));
+    else if (CHILD(cur_root, 2) != NULL && strcmp(CHILD(cur_root, 2)->type, "StmtList") == 0)
+        DFS(CHILD(cur_root, 2));
 }
 
 /* A deepth-first traversal method for searching the Stmt branch */
 void DFS_Stmt(TreeNode* cur_root){
+    assert(strcmp(cur_root->type, "Stmt") == 0);
 
+    if (CHILD(cur_root, 1) != NULL && strcmp(CHILD(cur_root, 1)->type, "CompSt") == 0){
+        Push_Scope();
+        DFS_CompSt(CHILD(cur_root, 1));
+        Pop_Scope();
+    }
+    else if (CHILD(cur_root, 1) != NULL && strcmp(CHILD(cur_root, 1)->type, "RETURN") == 0){
+        // Stmt: RETURN Exp SEMI
+        Type* rtn_type = DFS_Expression(CHILD(cur_root, 2));
+
+        if (Is_Type_Equal(rtn_type, func_ret_type) == false){
+            Report_Errors(8, CHILD(cur_root, 2));
+            return;
+        }
+    }
+    else{  
+        TreeNode* pt = CHILD(cur_root, 1);
+        for(;pt!=NULL;pt=pt->sibling)
+            DFS(pt);
+    }
 }
 
 /* A deepth-first traversal method for searching the ExtDef branch */
