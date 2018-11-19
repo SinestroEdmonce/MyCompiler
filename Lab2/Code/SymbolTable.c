@@ -75,6 +75,8 @@ bool Insert_Node_to_Var_Func_Hashtable(SymbolNode* symbol_node){
     /* Locate the node head position */
     unsigned int head_loc_index = Hash_Method_PJW(symbol_node->var_func_symbol->record_name);
     SymbolNode** node_head = &var_func_hashtable[head_loc_index];
+    // if ((*node_head) != NULL)
+    //     printf("[INFO] Insert symbol \"%s\"\n", (*node_head)->var_func_symbol->record_name);
 
     if (*node_head == NULL){
         (*node_head) = symbol_node;
@@ -94,9 +96,11 @@ bool Insert_Node_to_Var_Func_Hashtable(SymbolNode* symbol_node){
 }
 
 /* Insert valid node into the stack */
-bool Insert_Node_to_Scopestack(SymbolNode* symbol_node, const int scope){
+bool Insert_Node_to_Scopestack(SymbolNode* symbol_node, int scope){
     /* Locate the node head position */
     SymbolNode** node_head = &symbol_scope_stack[scope];
+    // if ((*node_head) != NULL)
+    //     printf("[INFO] Insert symbol \"%s\"\n", (*node_head)->var_func_symbol->record_name);
 
     if ((*node_head) == NULL){
         (*node_head) = symbol_node;
@@ -109,7 +113,7 @@ bool Insert_Node_to_Scopestack(SymbolNode* symbol_node, const int scope){
         (*node_head) = symbol_node;
         (*node_head)->stack_next = tmp;
         (*node_head)->stack_prev = NULL;
-        tmp->node_prev = (*node_head);
+        tmp->stack_prev = (*node_head);
     }
 
     return true;
@@ -141,10 +145,11 @@ bool Insert_Var_Func_Symbol_Node(SymbolRecord* symbol_record){
 bool Insert_Var_Symbol(char* var_symbol_id, Type* symbol_type){
     assert(symbol_type->kind != FUNCTION);
 
+    // printf("[INFO] Insert symbol \"%s\"\n", var_symbol_id);
     SymbolRecord* var_symbol_record = malloc(sizeof(SymbolRecord));
     var_symbol_record->scope_level = scope_level;
     var_symbol_record->symbol_type = symbol_type;
-    strcpy(var_symbol_record->record_name, var_symbol_id);
+    var_symbol_record->record_name = var_symbol_id;
 
     return Insert_Var_Func_Symbol_Node(var_symbol_record);
 }
@@ -155,11 +160,11 @@ bool Insert_Func_Symbol(char* func_symbol_id, Type* symbol_type, TreeNode* tree_
 
     SymbolRecord* func_symbol_record = malloc(sizeof(SymbolRecord));
     func_symbol_record->symbol_type = symbol_type;
-    strcpy(func_symbol_record->record_name, func_symbol_id);
+    func_symbol_record->record_name = func_symbol_id;
     func_symbol_record->tree_node = tree_node;
     
     /* Judge whether the given function is declared-only or not only declared but also implemented */
-    if (scope_level == IMPLEMENTED)
+    if (scope_level != DECLARED_ONLY)
         func_symbol_record->scope_level = IMPLEMENTED;
     else
         func_symbol_record->scope_level = DECLARED_ONLY;
@@ -212,7 +217,7 @@ bool Insert_Structure_Symbol_Node(StructureSymbol* structure_symbol){
 bool Insert_Structure_Symbol(char* structure_symbol_id, Structure* structure){
     StructureSymbol* structure_symbol = malloc(sizeof(StructureSymbol));
     structure_symbol->structure_type = structure;
-    strcpy(structure_symbol->structure_name, structure_symbol_id);
+    structure_symbol->structure_name = structure_symbol_id;
 
     return Insert_Structure_Symbol_Node(structure_symbol);
 }
@@ -222,18 +227,14 @@ bool Delete_Head_Node(SymbolNode** head_node){
     if (*head_node == NULL)
         return true;
     else{
-       if ((*head_node)->node_next == NULL){
-           free((*head_node));
-           (*head_node) = NULL;
-           return true;
+        SymbolNode* pt = (*head_node);
+        (*head_node) = pt->node_next;
+        pt->node_prev = NULL;
+        if (pt->node_next != NULL) {
+            pt->node_next->node_prev = NULL;
+            pt->node_next = NULL;
         }
-        else{
-            SymbolNode* tmp = (*head_node)->node_next;
-            free((*head_node));
-            (*head_node) = tmp;
-            (*head_node)->node_prev = NULL;
-            return true;
-        }
+        return true;
     }
 }
 
@@ -254,13 +255,15 @@ bool Delete_Node_In_Var_Func_Hashtable(SymbolNode* symbol_node){
         pt->node_prev->node_next = pt->node_next;
         pt->node_next->node_prev = pt->node_prev;
 
-        free(pt);
-        pt = NULL;
+        pt->node_next = pt->node_prev = NULL;
+
+        return true;
     }
 }
 
 /* Delete a symbol node in structrue hashtable */
 bool Delete_Node_In_Structure_Hashtable(SymbolNode* symbol_node){
+    // printf("[INFO] Delete symbol \"%s\"\n", symbol_node->var_func_symbol->record_name);
     unsigned int head_loc_index = Hash_Method_PJW(symbol_node->structure_symbol->structure_name);
     SymbolNode** head_node = &structure_hashtable[head_loc_index];
 
@@ -276,50 +279,36 @@ bool Delete_Node_In_Structure_Hashtable(SymbolNode* symbol_node){
         pt->node_prev->node_next = pt->node_next;
         pt->node_next->node_prev = pt->node_prev;
 
-        free(pt);
-        pt = NULL;
+        pt->node_prev = pt->node_next = NULL;
+
         return true;
     }
 }
 
 /* Delete a symbol node in scope stack */
 bool Delete_Node_In_Scopestack_List(SymbolNode* symbol_node){
+    // printf("[INFO] Delete symbol \"%s\"\n", symbol_node->var_func_symbol->record_name);
     SymbolNode** head_node = &symbol_scope_stack[symbol_node->var_func_symbol->scope_level];
 
-    if ((*head_node) == symbol_node){
-        if ((*head_node) == NULL)
-            return true;
-        
-        if ((*head_node)->node_next != NULL){
-            SymbolNode* tmp = (*head_node)->node_next;
-            free((*head_node));
-            (*head_node) = tmp;
-            (*head_node)->node_prev = NULL;
-            return true;
-        }
-        else{
-            free((*head_node));
-            (*head_node) = NULL;
-            return true;
-        }
+    if (symbol_node->stack_prev == NULL){
+        (*head_node) = symbol_node->stack_next;
+        if (symbol_node->stack_next != NULL) 
+            symbol_node->stack_next->stack_prev = NULL;
+        symbol_node->stack_prev = symbol_node->stack_next = NULL;
     }
     else{
-        SymbolNode* pt = (*head_node);
-        while(pt != symbol_node)
-            pt = pt->node_next;
-        
-        /* Reconnect the nodes */
-        pt->node_prev->node_next = pt->node_next;
-        pt->node_next->node_prev = pt->node_prev;
+        if (symbol_node->stack_next != NULL) 
+            symbol_node->stack_prev->stack_prev = symbol_node->stack_prev;
 
-        free(pt);
-        pt = NULL;
-        return true;
+        symbol_node->stack_prev->stack_next = symbol_node->stack_next;
+        symbol_node->stack_prev = symbol_node->stack_next = NULL;
     }
 }
 
 /* Delete a VARIABLE or FUCTION symbol */
 bool Delete_Var_Func_Symbol(char* symbol_id) {
+    // printf("[INFO] Delete symbol \"%s\"\n", symbol_id);
+    
     SymbolNode* pt = var_func_hashtable[Hash_Method_PJW(symbol_id)];
 
     while (strcmp(pt->var_func_symbol->record_name, symbol_id) != 0) {
@@ -366,26 +355,28 @@ void Push_Scope() {
  * After all the operations have been perfectly done, the scope will have been popped.
  */
 void Pop_Scope() {
-    SymbolNode* head_node = symbol_scope_stack[scope_level];
+    SymbolNode** head_node = &symbol_scope_stack[scope_level];
+    // if ((*head_node) != NULL)
+    //     printf("[INFO] Delete symbol \"%s\"\n", (*head_node)->var_func_symbol->record_name);
 
-    while (head_node != NULL) {
-        SymbolNode* pt = head_node;
+    while (*head_node != NULL){
+        SymbolNode* pt = *head_node;
         SymbolNode* first = pt;
-        while (pt != NULL) {
+        while (pt != NULL){
             SymbolNode* tmp = pt->stack_next;
             /* if the node is the first one in var-func hashtable, 
              * which means that it is the deepest embedding scope,
              * then it can be deleted. 
              * Otherwise, there might be some mistakes and some other deeper nodes should be deleted first.
              */
-            if (pt->node_prev == NULL) { 
+            if (pt->node_prev == NULL){ 
+                Delete_Var_Func_Symbol(pt->var_func_symbol->record_name);
                 if (first == pt) 
                     first = tmp;
-                Delete_Var_Func_Symbol(pt->var_func_symbol->record_name);
             }
             pt = tmp;
         }
-        head_node = first;
+        *head_node = first;
     }
     scope_level = scope_level+1;
     assert(scope_level > -1);
