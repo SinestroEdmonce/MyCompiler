@@ -72,11 +72,12 @@ ExtDefList: ExtDef ExtDefList {$$=Node_Initializer("ExtDefList", "", true); Inse
 ExtDef: Specifier ExtDecList SEMI {$$=Node_Initializer("ExtDef", "", true); Insert_Child($$,$1); Insert_Child($$, $2); Insert_Child($$, $3);}
     | Specifier SEMI {$$=Node_Initializer("ExtDef", "", true); Insert_Child($$, $1); Insert_Child($$, $2);}
     | Specifier FunDec CompSt {$$=Node_Initializer("ExtDef", "", true); Insert_Child($$, $1); Insert_Child($$, $2); Insert_Child($$, $3);}
+    | Specifier FunDec SEMI {$$=Node_Initializer("ExtDef", "", true); Insert_Child($$, $1); Insert_Child($$, $2); Insert_Child($$, $3);}
     /* Error Recovery */
     | error ExtDecList SEMI {$$=Node_Initializer("ExtDef", "", true); char str[MAXLENGTH] = "Wrong with Specifier"; syn_error=true; yyerror(str);}
     | Specifier error SEMI {$$=Node_Initializer("ExtDef", "", true); char str[MAXLENGTH] = "Wrong ExtDecList between Specifier and \";\""; syn_error=true; yyerror(str);}
     | error SEMI {$$=Node_Initializer("ExtDef", "", true); char str[MAXLENGTH] = "Unnecessary \";\""; syn_error=true; yyerror(str);}
-    | Specifier FunDec error{$$=Node_Initializer("ExtDef", "", true); char str[MAXLENGTH] = "Missing CompSt"; syn_error=true; yyerror(str);}
+    | Specifier FunDec error{$$=Node_Initializer("ExtDef", "", true); char str[MAXLENGTH] = "Missing \";\""; syn_error=true; yyerror(str);}
     ;
 ExtDecList: VarDec {$$=Node_Initializer("ExtDecList", "", true); Insert_Child($$, $1);}
     | VarDec COMMA ExtDecList {$$=Node_Initializer("ExtDecList", "", true); Insert_Child($$, $1); Insert_Child($$, $2); Insert_Child($$, $3);}
@@ -184,14 +185,14 @@ Exp: Exp ASSIGNOP Exp {$$=Node_Initializer("Exp", "", true ); Insert_Child($$, $
     | Exp MINUS Exp {$$=Node_Initializer("Exp", "", true); Insert_Child($$, $1); Insert_Child($$, $2); Insert_Child($$, $3);}
     | Exp STAR Exp {$$=Node_Initializer("Exp", "", true); Insert_Child($$, $1); Insert_Child($$, $2); Insert_Child($$, $3);}
     | Exp DIV Exp {$$=Node_Initializer("Exp", "", true); Insert_Child($$, $1); Insert_Child($$, $2); Insert_Child($$, $3);}
-    | LP Exp RP {$$=Node_Initializer("Exp", "", true); Insert_Child($$, $1); Insert_Child($$, $2); Insert_Child($$, $3);}
+    | LP Exp RP {$$=Node_Initializer("Exp", "", true); $$->left_value = DEPEND_ON_CHILD; $$->child_num_depend = 2; Insert_Child($$, $1); Insert_Child($$, $2); Insert_Child($$, $3);}
     | MINUS Exp {$$=Node_Initializer("Exp", "", true); Insert_Child($$, $1); Insert_Child($$, $2);}
     | NOT Exp {$$=Node_Initializer("Exp", "", true); Insert_Child($$, $1); Insert_Child($$, $2);}
     | ID LP Args RP {$$=Node_Initializer("Exp", "", true); Insert_Child($$, $1); Insert_Child($$, $2); Insert_Child($$, $3); Insert_Child($$, $4);}
     | ID LP RP {$$=Node_Initializer("Exp", "", true); Insert_Child($$, $1); Insert_Child($$, $2); Insert_Child($$, $3);}
-    | Exp LB Exp RB {$$=Node_Initializer("Exp", "", true); Insert_Child($$, $1); Insert_Child($$, $2); Insert_Child($$, $3); Insert_Child($$, $4); }
-    | Exp DOT ID {$$=Node_Initializer("Exp", "", true); Insert_Child($$, $1); Insert_Child($$, $2); Insert_Child($$, $3);}
-    | ID {$$=Node_Initializer("Exp", "", true); Insert_Child($$, $1);}
+    | Exp LB Exp RB {$$=Node_Initializer("Exp", "", true); $$->left_value = ARRAY_LEFT; Insert_Child($$, $1); Insert_Child($$, $2); Insert_Child($$, $3); Insert_Child($$, $4); }
+    | Exp DOT ID {$$=Node_Initializer("Exp", "", true); $$->left_value = DEPEND_ON_CHILD; $$->child_num_depend = 1; Insert_Child($$, $1); Insert_Child($$, $2); Insert_Child($$, $3);}
+    | ID {$$=Node_Initializer("Exp", "", true);$$->left_value = DEPEND_ON_CHILD; $$->child_num_depend = 1; Insert_Child($$, $1);}
     | INT {$$=Node_Initializer("Exp", "", true); Insert_Child($$, $1);}
     | FLOAT {$$=Node_Initializer("Exp", "", true); Insert_Child($$, $1);}
     /* Error Recovery */

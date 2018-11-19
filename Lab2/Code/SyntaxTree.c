@@ -11,7 +11,16 @@ TreeNode* Node_Initializer(char* node_name, char* value_str, bool flag){
     tmp->child = NULL;
     tmp->sibling = NULL;
     tmp->is_real_value = false;
-    
+    tmp->child_num_depend = -1;
+
+    /* Judge whether the node can be treated as a left value */
+    if (strcmp(node_name, "ID\0") == 0){
+        tmp->left_value = ID_LEFT;
+    }
+    else{
+        tmp->left_value = NOT_LEFT_VALUE;
+    }
+
     /* Store the value as its own type */
     if (strcmp(node_name, "FLOAT\0")==0){
         double f_val = atof(value_str);
@@ -56,7 +65,7 @@ TreeNode* Get_Nth_Child(TreeNode* parent, int num){
     TreeNode* pt = parent->child;
     if (pt != NULL){
         int idx = 1;
-        for (; idx<num, pt!=NULL; idx++)
+        for (; (idx<num) && (pt!=NULL); idx++)
             pt = pt->sibling;
         
         if (pt != NULL)

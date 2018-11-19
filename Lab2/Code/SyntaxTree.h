@@ -35,6 +35,12 @@ typedef struct Node_ {
      */
     bool is_non_ternmial;
 
+    /* Left value notation, 
+     * child_num_depend shows which child should depend on
+     */
+    enum { NOT_LEFT_VALUE=0, ARRAY_LEFT=1, ID_LEFT=2, DEPEND_ON_CHILD=3 } left_value;
+    int child_num_depend;
+
 } TreeNode;
 
 TreeNode* root;
