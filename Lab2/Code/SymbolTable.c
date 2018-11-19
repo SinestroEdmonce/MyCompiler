@@ -378,6 +378,13 @@ void Pop_Scope() {
         }
         *head_node = first;
     }
+    /* An easy way to delete a given symbol node */
+    // SymbolNode* pt = (*head_node);
+    // while (pt != NULL){
+    //     Delete_Var_Func_Symbol(pt->var_func_symbol->record_name);
+    //     pt = pt->stack_next;
+    // }
+
     scope_level = scope_level+1;
     assert(scope_level > -1);
 };
