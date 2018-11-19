@@ -101,7 +101,7 @@ typedef struct SymbolRecord_ {
 } SymbolRecord;
 
 /* Create a node that belongs to BASIC */
-Type* Create_Type_Basic(char* basic_id);
+void Create_Type_Basic(Type** type, char* basic_id);
 
 
 #endif

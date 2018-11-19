@@ -81,7 +81,7 @@ void DFS_CompSt(TreeNode* cur_root);
 /* Deepth-first traversal for Exp branch */
 Type* DFS_Expression(TreeNode* cur_root);
 
-/* Deepth-first traversal TODO */
+/* Deepth-first traversal for Args branch */
 FuncArgsList* DFS_Args(TreeNode* cur_root);
 
 /* Deepth-first traversal for Stmt branch */

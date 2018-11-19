@@ -122,9 +122,261 @@ bool Is_Type_Equal(Type* const type1_id, Type* const type2_id){
     return false;
 }
 
-/* Deepth-first traversal TODO */
-Type* DFS_Expression(TreeNode* cur_root){
+bool Is_Params_Args_Equal(FuncParamList* const param, FuncArgsList* const args) {
+    FuncParamList* pa = param;
+    FuncArgsList* ar = args;
 
+    while(pa!=NULL && ar!=NULL){
+        if (Is_Type_Equal(pa->param_type, ar->args_type) == false)
+            return false;
+        pa=pa->next;
+        ar=ar->next;
+    }
+    if (pa != NULL || ar != NULL)
+        return false;
+    
+    return true;
+}
+
+FieldList* Get_Field_List(FieldList* head_node, char* field_name) {
+    FieldList* pt = head_node;
+    while(pt != NULL){
+        if (strcmp(pt->field_name, field_name) == 0)
+            return pt;
+        pt = pt->next;
+    }
+    return NULL;
+}
+
+Type* Get_Field_Type(Structure* strcuture_type, char* field_name){
+    FieldList* structure_field = Get_Field_List(strcuture_type->fields, field_name);
+    if (structure_field == NULL)
+        return NULL;
+    
+    return structure_field->field_type;
+}
+
+/* A deepth-first traversal for the Args branch */
+FuncArgsList* DFS_Args(TreeNode* cur_root){
+    //Args: Exp COMMA Args|Exp
+    assert(strcmp(cur_root->type, "Args") == 0);
+    
+    FuncArgsList* args_list = malloc(sizeof(FuncArgsList));
+    args_list->args_type = DFS_Expression(CHILD(cur_root, 1));
+    args_list->next = NULL;
+    args_list->prev = NULL;
+
+    if (CHILD(cur_root, 3) != NULL){
+        args_list->next = DFS_Args(CHILD(cur_root, 3));
+        if (args_list->next != NULL)
+            args_list->next->prev = args_list;
+    }
+    else 
+        args_list->next = NULL;
+
+    return args_list;
+}
+
+/* A deepth-first traversal for the Exp branch */
+Type* DFS_Expression(TreeNode* cur_root){
+    assert(strcmp(cur_root->type, "Exp") == 0);
+
+    if (CHILD(cur_root, 2) == NULL){
+        // Exp: ID|INT|FLOAT
+        if (strcmp(CHILD(cur_root, 1)->type, "ID") == 0){
+            char* id_name = DFS_Id(CHILD(cur_root, 1));
+            SymbolRecord* symbol = Find_Var_Func_Symbol(id_name);
+
+            if (symbol == NULL){
+                Report_Errors(1, CHILD(cur_root, 1));
+                return NULL;
+            }
+            return symbol->symbol_type;
+        }
+        else if (strcmp(CHILD(cur_root, 1)->type, "INT") == 0){
+            DFS_Int(CHILD(cur_root, 1));
+            Type* int_type = NULL;
+            Create_Type_Basic(&int_type, "int");
+            return int_type;
+        }
+        else{
+            DFS_Float(CHILD(cur_root, 1));
+            Type* float_type = NULL;
+            Create_Type_Basic(&float_type, "float");
+            return float_type;
+        }
+    }
+    else if (CHILD(cur_root, 3) == NULL){
+        //Exp: MINUS Exp|NOT Exp
+        if (strcmp(CHILD(cur_root, 1)->type, "MINUS") == 0){
+            Type* type_exp = DFS_Expression(CHILD(cur_root, 2));
+
+            if (type_exp == NULL)
+                return NULL;
+            else if (type_exp->kind == BASIC)
+                return type_exp;
+            else{
+                Report_Errors(7, CHILD(cur_root, 2));
+                return NULL;
+            }
+        }
+        else{
+            Type* type_exp = DFS_Expression(CHILD(cur_root, 2));
+            if (type_exp == NULL)
+                return NULL;
+            if (type_exp->kind == BASIC && type_exp->basic == TYPE_INT)
+                return type_exp;
+            else{
+                Report_Errors(7, CHILD(cur_root, 2));
+                return NULL;
+            }
+        }
+    }
+    else if (CHILD(cur_root, 4) == NULL && strcmp(CHILD(cur_root, 2)->type, "LP") != 0) {
+        /* Exp: Exp ASSIGNOP Exp|Exp AND Exp
+         *     |Exp RELOP Exp|Exp PLUS Exp
+         *     |Exp MINUS Exp|Exp STAR Exp
+         *     |Exp DIV Exp|LP Exp RP
+         *     |Exp OR Exp|Exp DOT ID 
+         */
+        if (strcmp(CHILD(cur_root, 2)->type, "Exp") == 0)
+            return DFS_Expression(CHILD(cur_root, 2));
+        else if (strcmp(CHILD(cur_root, 2)->type, "ASSIGNOP") == 0){
+            Type* left_exp_type = DFS_Expression(CHILD(cur_root, 1));
+            Type* right_exp_type = DFS_Expression(CHILD(cur_root, 3));
+
+            if (left_exp_type == NULL || right_exp_type == NULL)
+                return NULL;
+            
+            TreeNode* left_node = CHILD(cur_root, 1);
+            TreeNode* child_depend = left_node;
+            int left_value_flag = child_depend->left_value;
+            // Find the node that can be treated as a left value
+            while(child_depend->left_value == DEPEND_ON_CHILD)
+                child_depend = CHILD(child_depend, child_depend->child_num_depend);
+
+            if (child_depend->left_value == ID_LEFT){
+                assert(strcmp(child_depend->type, "ID") == 0);
+
+                SymbolRecord* symbol_depend = Find_Var_Func_Symbol(child_depend->value);
+                if (symbol_depend != NULL && symbol_depend->symbol_type->kind != FUNCTION)
+                    left_value_flag = 1;
+            }
+            else
+                left_value_flag = child_depend->left_value;
+            
+            if (left_value_flag == NOT_LEFT_VALUE){
+                Report_Errors(6, CHILD(cur_root, 1));
+                return NULL;
+            }
+            if (Is_Type_Equal(left_exp_type, right_exp_type) == false){
+                Report_Errors(5, cur_root);
+                return NULL;
+            }
+            return left_exp_type;
+        }
+        else if (strcmp(CHILD(cur_root, 2)->type, "DOT") == 0){
+            Type* exp_type = DFS_Expression(CHILD(cur_root, 1));
+
+            if (exp_type == NULL)
+                return NULL;
+            
+            if (exp_type->kind != STRUCTURE){
+                Report_Errors(13, CHILD(cur_root, 1));
+                return NULL;
+            }
+
+            Type* field_type = Get_Field_Type(exp_type->structure, DFS_Id(CHILD(cur_root, 3)));
+            if (field_type != NULL)
+                return field_type;
+            else{
+                Report_Errors(14, CHILD(cur_root, 3));
+                return NULL;
+            }
+        }
+        else{
+            Type* left_exp_type = DFS_Expression(CHILD(cur_root, 1));
+            Type* right_exp_type = DFS_Expression(CHILD(cur_root, 3));
+            
+            if (left_exp_type == NULL || right_exp_type == NULL)
+                return NULL;
+            
+            if (Is_Type_Equal(left_exp_type, right_exp_type) == false){
+                Report_Errors(7, cur_root);
+                return NULL;
+            }
+
+            if (strcmp(CHILD(cur_root, 2)->type, "OR") == 0 || strcmp(CHILD(cur_root, 2)->type, "AND") == 0){
+                if (left_exp_type->kind != BASIC){
+                    Report_Errors(7, cur_root);
+                    return NULL;
+                }
+                if (left_exp_type->basic != TYPE_INT){
+                    Report_Errors(7, cur_root);
+                    return NULL;
+                }
+            }
+            else{
+                if (left_exp_type->kind != BASIC){
+                    Report_Errors(7, cur_root);
+                    return NULL;
+                }
+            }
+            return left_exp_type;
+        }
+    }
+    else if (strcmp(CHILD(cur_root, 1)->type, "ID") == 0){
+        // Exp: ID LP Args RP|ID LP RP
+        SymbolRecord* func_symbol = Find_Var_Func_Symbol(DFS_Id(CHILD(cur_root, 1)));
+
+        if (func_symbol == NULL){
+            Report_Errors(2, CHILD(cur_root, 1));
+            return NULL;
+        }
+
+        if (func_symbol->symbol_type->kind != FUNCTION){
+            Report_Errors(11, CHILD(cur_root, 1));
+            return NULL;
+        }
+
+        FuncArgsList* args_list = NULL;
+        if (strcmp(CHILD(cur_root, 3)->type, "Args") == 0)
+            args_list = DFS_Args(CHILD(cur_root, 3));
+        
+        FuncParamList* param_list = func_symbol->symbol_type->func.param_list;
+        if (Is_Params_Args_Equal(param_list, args_list) == false)
+            Report_Errors(9, CHILD(cur_root, 3));
+        
+        return func_symbol->symbol_type->func.rtn;
+    }
+    else if (strcmp(CHILD(cur_root, 1)->type, "Exp") == 0){
+        // Exp: Exp LB Exp RB
+        Type* left_exp_type = DFS_Expression(CHILD(cur_root, 1));
+
+        Type* pt = NULL;
+        if (left_exp_type == NULL || left_exp_type->kind != ARRAY)
+            Report_Errors(10, CHILD(cur_root, 0));
+        else{
+            pt = malloc(sizeof(Type));
+            // Create a copy 
+            *pt = *left_exp_type;
+            pt->array.array_size = pt->array.array_size->next;
+            if (pt->array.array_size == NULL){
+                Type* tmp = pt;
+                pt = pt->array.elem;
+                free(tmp);
+            }
+        }
+
+        Type* right_exp_type = DFS_Expression(CHILD(cur_root, 3));
+        if (right_exp_type == NULL || right_exp_type->kind != BASIC || right_exp_type->basic != TYPE_INT)
+            Report_Errors(12, CHILD(cur_root, 3));
+
+        return pt;   
+    }
+    printf("error\n");
+    assert(false);
+    return NULL;
 }
 
 /* Deepth-first traversal for searching the VarDec branch */
@@ -301,11 +553,11 @@ Structure* DFS_Structure_Specifier(TreeNode* cur_root){
 Type* DFS_Specifier(TreeNode* cur_root){
     assert(strcmp(cur_root->type, "Specifier") == 0);
 
-    Type* pt;
+    Type* pt = NULL;
     if (strcmp(CHILD(cur_root, 1)->type, "TYPE") == 0){
         // Specifier: TYPE
         char* type_name = CHILD(cur_root, 1)->value;
-        pt = Create_Type_Basic(type_name);
+        Create_Type_Basic(&pt, type_name);
 
         if (pt->basic == TYPE_OTHERS)
             return NULL;

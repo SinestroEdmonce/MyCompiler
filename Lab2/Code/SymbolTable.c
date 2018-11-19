@@ -74,53 +74,45 @@ SymbolNode* Find_Node_in_Scope(SymbolRecord* symbol_record, int scope){
 bool Insert_Node_to_Var_Func_Hashtable(SymbolNode* symbol_node){
     /* Locate the node head position */
     unsigned int head_loc_index = Hash_Method_PJW(symbol_node->var_func_symbol->record_name);
-    SymbolNode* node_head = var_func_hashtable[head_loc_index];
+    SymbolNode** node_head = &var_func_hashtable[head_loc_index];
 
-    if (node_head == NULL){
-        node_head = symbol_node;
-        node_head->node_prev = NULL;
-        node_head->node_next = NULL;
+    if (*node_head == NULL){
+        (*node_head) = symbol_node;
+        (*node_head)->node_prev = NULL;
+        (*node_head)->node_next = NULL;
     }
     else{
         /* Locate the inserted node position and insert the node in front of the head */
-        SymbolNode* tmp = node_head;
-        node_head = symbol_node;
-        node_head->node_next = tmp;
-        node_head->node_prev = NULL;
-        tmp->node_prev = node_head;
+        SymbolNode* tmp = (*node_head);
+        (*node_head) = symbol_node;
+        (*node_head)->node_next = tmp;
+        (*node_head)->node_prev = NULL;
+        tmp->node_prev = *node_head;
     }
 
-    /* Judge whether the node has been successfully inserted */
-    if (strcmp(var_func_hashtable[head_loc_index]->var_func_symbol->record_name, symbol_node->var_func_symbol->record_name) == 0)
-        return true;
-    else
-        return false;
+    return true;
 }
 
 /* Insert valid node into the stack */
 bool Insert_Node_to_Scopestack(SymbolNode* symbol_node, const int scope){
     /* Locate the node head position */
-    SymbolNode* node_head = symbol_scope_stack[scope];
+    SymbolNode** node_head = &symbol_scope_stack[scope];
 
-    if (node_head == NULL){
-        node_head = symbol_node;
-        node_head->stack_next = NULL;
-        node_head->stack_prev = NULL;
+    if ((*node_head) == NULL){
+        (*node_head) = symbol_node;
+        (*node_head)->stack_next = NULL;
+        (*node_head)->stack_prev = NULL;
     }
     else{
         /* Locate the inserted node position and insert the node in front of the head */
-        SymbolNode* tmp = node_head;
-        node_head = symbol_node;
-        node_head->stack_next = tmp;
-        node_head->stack_prev = NULL;
-        tmp->node_prev = node_head;
+        SymbolNode* tmp = (*node_head);
+        (*node_head) = symbol_node;
+        (*node_head)->stack_next = tmp;
+        (*node_head)->stack_prev = NULL;
+        tmp->node_prev = (*node_head);
     }
 
-    /* Judge whether the node has been successfully inserted */
-    if (strcmp(symbol_scope_stack[scope]->var_func_symbol->record_name, symbol_node->var_func_symbol->record_name) == 0)
-        return true;
-    else
-        return false;
+    return true;
 }
 
 /* Generall inserting method for VARIABLE and FUNCTION */
@@ -179,25 +171,21 @@ bool Insert_Func_Symbol(char* func_symbol_id, Type* symbol_type, TreeNode* tree_
 bool Insert_Node_to_Structure_Hashtable(SymbolNode* symbol_node){
     /* Locate the head node in structure hashtable */
     unsigned int head_loc_index = Hash_Method_PJW(symbol_node->structure_symbol->structure_name);
-    SymbolNode* node_head = structure_hashtable[head_loc_index];
+    SymbolNode** node_head = &structure_hashtable[head_loc_index];
 
-    if (node_head == NULL){
-        node_head = symbol_node;
-        node_head->node_next = NULL;
-        node_head->node_prev = NULL;
+    if ((*node_head) == NULL){
+        (*node_head) = symbol_node;
+        (*node_head)->node_next = NULL;
+        (*node_head)->node_prev = NULL;
     }
     else{
-        SymbolNode* temp = node_head;
-        node_head = symbol_node;
-        node_head->node_next = temp;
-        node_head->node_prev = NULL;
-        temp->node_prev = node_head;
+        SymbolNode* temp = (*node_head);
+        (*node_head) = symbol_node;
+        (*node_head)->node_next = temp;
+        (*node_head)->node_prev = NULL;
+        temp->node_prev = (*node_head);
     }
-
-    if (strcmp(structure_hashtable[head_loc_index]->structure_symbol->structure_name, symbol_node->structure_symbol->structure_name) != 0)
-        return false;
-    else 
-        return true;
+    return true;
 }
 
 bool Insert_Structure_Symbol_Node(StructureSymbol* structure_symbol){

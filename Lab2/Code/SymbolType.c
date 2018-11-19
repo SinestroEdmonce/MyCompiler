@@ -1,21 +1,19 @@
 #include "SymbolType.h"
 
-Type* Create_Type_Basic(char* basic_id){
-    Type* type = NULL;
+void Create_Type_Basic(Type** type, char* basic_id){
     if (strcmp(basic_id, "int") == 0){
-        Type* type = malloc(sizeof(Type));
-        type->kind = BASIC;
-        type->basic = TYPE_INT;
+        *type = malloc(sizeof(Type));
+        (*type)->kind = BASIC;
+        (*type)->basic = TYPE_INT;
     }
     else if (strcmp(basic_id, "float") == 0){
-        Type* type = malloc(sizeof(Type));
-        type->kind = BASIC;
-        type->basic = TYPE_FLOAT;
+        *type = malloc(sizeof(Type));
+        (*type)->kind = BASIC;
+        (*type)->basic = TYPE_FLOAT;
     }
     else{
-        Type* type = malloc(sizeof(Type));
-        type->kind = BASIC;
-        type->basic = TYPE_OTHERS;
+        *type = malloc(sizeof(Type));
+        (*type)->kind = BASIC;
+        (*type)->basic = TYPE_OTHERS;
     }
-    return type;
 }
