@@ -3,6 +3,9 @@
 #include<stdbool.h>
 #include "SyntaxTree.h"
 #include "syntax.tab.h"
+#include "ErrorReport.h"
+#include "SymbolTable.h"
+#include "Semantic.h"
 
 extern FILE* yyin;
 extern void yyrestart(FILE *input_file);
@@ -13,26 +16,43 @@ extern bool syn_error;
 //#define YYDEBUG 1
 
 int main(int argc, char** argv){
-    if(argc > 1){
-        FILE* file = fopen(argv[1],"r");
-        /* Cannot open the file */
-        if(!file){
-            perror(argv[1]);
-            return 1;
-        }
-        yyrestart(file);
-        //yydebug=1;
-        yyparse();
-        fclose(file);
+    // if(argc > 1){
+    //     FILE* file = fopen(argv[1],"r");
+    //     /* Cannot open the file */
+    //     if(!file){
+    //         perror(argv[1]);
+    //         return 1;
+    //     }
+    //     yyrestart(file);
+    //     //yydebug=1;
+    //     yyparse();
+    //     fclose(file);
 
-        /* If no errors, traverse the whole tree */
-        if(syn_error==false && lex_error==false)
-            Preorder_Traversal(root, 0);
+    //     /* If no errors, traverse the whole tree */
+    //     if(syn_error==false && lex_error==false){
+    //         Preorder_Traversal(root, 0);
+    //         DFS(root);
+    //     }      
 
-        return 0;
-    }
-    else{
-        printf("Error: Parameter missing.\n");
-        return -1;
-    }
+    //     return 0;
+    // }
+    // else{
+    //     printf("Error: Parameter missing.\n");
+    //     return -1;
+    // }
+    printf("debug\n");
+    FILE* file = fopen("./Test/test1.txt","r");
+    
+    yyrestart(file);
+    
+    yyparse();
+    fclose(file);
+
+    /* If no errors, traverse the whole tree */
+    if(syn_error==false && lex_error==false){
+        //Preorder_Traversal(root, 0);
+        Semantic_Analysis();
+    } 
+    return 0;     
+
 }
