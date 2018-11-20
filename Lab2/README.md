@@ -4,7 +4,83 @@
 - [x] 代码中符号表采用了基于十字链表和Open hashing的散列表结构。
 - [x] 代码中语义分析部分采用深度优先搜索的方法遍历语法树，并且查填表以找到错误类型。 
 - [x] 本次实验中进一步实现了对C语言代码的语义分析，能够输出符合C语言文法语法但是并不符合C语言语义要求的多种错误类型。
-## 数据结构(TODO)
+## 数据结构
+1. 首先针对变量类型，设计``Type``数据结构，存储不同类型的变量，比如函数、数组和结构体等，具体设计如下：
+```cpp
+    typedef struct Type_ {
+        enum {BASIC, ARRAY, STRUCTURE, FUNCTION, UNKNOWN} kind;
+        /* Different types use different groups of variables */
+        union {
+            enum {TYPE_INT, TYPE_FLOAT, TYPE_OTHERS} basic;
+            struct {
+                /* Array elments' type */
+                struct Type_* elem;
+                /* Array size list */
+                struct ArraySizeList_* array_size;
+            } array;
+            /* Structure type */
+            struct Structure_* structure;
+            struct {
+                /* Type of return value of a function */
+                struct Type_* rtn;
+                /* Parameters list of a fuction*/
+                struct FuncParamList_* param_list;
+            } func;
+            char unknown[128];
+        };
+    } Type; 
+```
+2. 其次针对不同变量类型，采用不同的结构体来存储信息，比如针对结构体，需要有存放成员变量的域链表，具体数据结构设计如下：
+```cpp
+/* Structure for different fields in programs */
+    typedef struct FieldList_ {
+        char* field_name;
+        /* Type of the field */
+        struct Type_* field_type;
+        /* prev: for convenience of deletion
+         * next: for embedded fields 
+         */
+        struct FieldList_* prev;
+        struct FieldList_* next;
+    } FieldList;
+
+    /* Structure for STRUCTURE in syntax tree */
+    typedef struct Structure_ {
+        struct FieldList_* fields;
+    } Structure;
+```
+3. 最后每一个``symbol``都需要进行存储，所以最终针对符号的结构体设计如下,其中``scope_level``是针对嵌套作用域设计的作用域层数记录：
+```cpp
+    /* Structure for symbols recorded in the symbol table */
+    typedef struct SymbolRecord_ {
+        /* Record name */
+        char* record_name;
+        /* Scope level */
+        int scope_level;
+        /* Type of scope or variables*/
+        struct Type_* symbol_type;
+        /* Syntax tree node for the scope of some functions */
+        TreeNode* tree_node;
+    } SymbolRecord;
+```
+4. 将上述这些数据结构组织成Hash表和作用域栈，记录如下：
+```cpp
+    /* Details of the hash table definition are listed below 
+     * @var_func_hashtable: a hash table just for VARIABLE and FUNCTION
+     * @structure_hashtable: a hash table just for STRUCTURE
+     * @symbol_scope_stack: a stack to record every variable or etc. in the same scope
+     */
+    SymbolNode* var_func_hashtable[HASHTABLE_LENGTH + 1];
+    SymbolNode* structure_hashtable[HASHTABLE_LENGTH + 1];
+    /* Note: 33rd for DECLARED_ONLY */
+    SymbolNode* symbol_scope_stack[MAX_SCOPE_NUM + 1]; 
+
+    /* scope_level: record the number of the scope embedding
+     * scope_backup: record the current scope level when encounting a declared but not defined functions and restore the scope level later
+     */
+    static int scope_level = 0;
+    static int scope_backup = -1; 
+```
 ## 实现思路(TODO)
 ## 实验难点
 本次实验主要有三大**难点**，具体如下：  
