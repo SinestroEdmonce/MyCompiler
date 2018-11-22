@@ -96,7 +96,7 @@
 
 1. 首先是建立合适的数据结构，在这次实验的代码部分，亮点和完成度比较高的地方集中在基于十字链表和开散列的散列表结构。针对这个稍微复杂的结构，下面以图例具体描述，代码实现在第2点大致列出:  
 
-![img](https://github.com/SinestroEdmonce/MyCompiler/raw/master/Lab2/Img/Imperative%20Style.png)
+    ![img](https://github.com/SinestroEdmonce/MyCompiler/raw/master/Lab2/Img/Crossing%20List.png)
 
 2. 除了建立好数据结构，还要实现基本的一些和该数据结构相关的方法，比如``Push_Scope()``、``Pop_Scope()``、``Insert_Var_Symbol()``和``Find_Var_Func_Symbol()``等方法，这样便于利用已经建立好的数据结构，一些方法的设计难点在第4点中列出。
 
