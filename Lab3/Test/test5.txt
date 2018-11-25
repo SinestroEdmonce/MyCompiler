@@ -1,0 +1,12 @@
+int main(){
+	int d;
+	int x[2];
+	x[1]=12;
+	d=x[1];
+
+	if(d==12)
+		write(1);
+	else
+		write(0);
+	return 0;
+}
