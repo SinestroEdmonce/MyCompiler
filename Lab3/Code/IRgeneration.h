@@ -35,7 +35,6 @@ typedef struct IROperand_ {
 } IROperand;
 
 typedef struct IRCode_ {
-
     /* The type of a piece of intermediate representation */
     enum IR_TYPE {
         IR_LABEL,
@@ -98,6 +97,11 @@ typedef struct IRCode_ {
     struct IRCode_* prev;
     struct IRCode_* next;
 } IRCode;
+
+
+/* A list of intermediate representation code (head&tail)*/
+IRCode* ir_list_head;
+IRCode* ir_list_tail;
 
 /* Remove a piece of intermediate representation */
 IRCode* Remove_IR_Code(IRCode* code);

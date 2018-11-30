@@ -14,10 +14,6 @@ const char* RELOP[] = {
     "==", "!=", ">", "<", ">=", "<="
 };
 
-/* A list of intermediate representation code (head&tail)*/
-IRCode* ir_list_head;
-IRCode* ir_list_tail;
-
 IROperand* New_Temp_Var() {
     /* Initialize and create new instances */
     IROperand* new_operand = malloc(sizeof(IROperand));
@@ -196,19 +192,22 @@ IRCode* Insert_IR_Code_After(IRCode* place, IRCode* code){
     return code;
 }
 
-IROperand* ir_clean_temp_var(IROperand* temp_operand) {
+IROperand* Clean_IR_Temp_Var(IROperand* temp_operand){
     assert(temp_operand->kind == OP_TEMP_VAR);
-    
-    if (ir_list_tail->kind == IR_ASSIGN && ir_list_tail->dst == temp_operand) {
-        free(temp_operand);
-        struct ir_code *p = ir_list_tail;
-        struct ir_operand *ret = p->src;
-        ir_list_tail = ir_list_tail->prev;
-        ir_list_tail->next = NULL;
-        free(p);
-        //count_temp_var--;
-        return ret;
+
+    if (ir_list_tail->kind == IR_ASSIGN && ir_list_tail->dst == temp_operand){
+        // free(temp_operand);
+
+        // /* TODO */
+        // IRCode* pt = ir_list_tail;
+        // IROperand* rtn = pt->src;
+        // ir_list_tail = ir_list_tail->prev;
+        // ir_list_tail->next = NULL;
+        // free(pt);
+
+        // return rtn;
     }
+
     return temp_operand;
 }
 
