@@ -99,12 +99,14 @@ typedef struct IRCode_ {
     struct IRCode_* next;
 } IRCode;
 
-IRCode* ir_list_head;
-IRCode* ir_list_tail;
+/* Remove a piece of intermediate representation */
+IRCode* Remove_IR_Code(IRCode* code);
 
-IRCode* remove_ir_code(IRCode* code);
-IRCode* insert_ir_code_before(IRCode* place, IRCode* code);
-IRCode* insert_ir_code_after(IRCode* place, IRCode* code);
+/* Insert a piece of intermediate representation before the current one */
+IRCode* Insert_IR_Code_Before(IRCode* place, IRCode* code);
+
+/* Insert a piece of intermediate representation after the current one */
+IRCode* Insert_IR_Code_After(IRCode* place, IRCode* code);
 
 /* Create a new intermediate representation symbol */
 IROperand* New_Temp_Var();
