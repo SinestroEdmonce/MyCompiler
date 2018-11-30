@@ -116,10 +116,13 @@ IROperand* New_Label();
 /* Obtain the operand name and its representation */
 char* Get_Operand_Representation(IROperand* operand);
 
+/* Remove some temporary variables */
+IROperand* Clean_IR_Temp_Var(IROperand* temp_operand);
+
+/* TODO */
 void add_ir_code(IRCode* code);
 void print_ir_code(FILE*, IRCode* code);
 void print_ir_list(FILE *fp);
-IROperand* ir_clean_temp_var(IROperand* op_temp);
 void ir_clean_assign();
 
 #endif

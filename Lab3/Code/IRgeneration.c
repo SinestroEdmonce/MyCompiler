@@ -140,36 +140,76 @@ IRCode* Remove_IR_Code(IRCode* code){
 
 /* Insert a piece of intermediate representation before the current one */
 IRCode* Insert_IR_Code_Before(IRCode* place, IRCode* code){
-    if (place == ir_list_head){
+    if (place == NULL && place != ir_list_head)
+        return NULL;
+    else if (place == NULL && place == ir_list_head){
         ir_list_head = code;
         code->prev = NULL;
-    }
-    if (place == ir_list) {
-        ir_list = code;
-        code->prev = NULL;
-    } else {
-        if (place->prev) place->prev->next = code;
-        code->prev = place->prev;
-    }
-    code->next = place;
-    place->prev = code;
-    return code;
+        code->next = NULL;
 
+        ir_list_tail = ir_list_head;
+    }
+    else if (place == ir_list_head){
+        code->next = ir_list_head;
+        code->prev = NULL;
+
+        ir_list_head->prev = code;
+        ir_list_head = ir_list_head->prev;
+    }
+    else{
+        if (place->prev != NULL)
+            place->prev->next = code;
+        code->prev = place->prev;
+        code->next = place;
+        place->prev = code;
+    }
+    
+    return code;
 }
 
 /* Insert a piece of intermediate representation after the current one */
 IRCode* Insert_IR_Code_After(IRCode* place, IRCode* code){
-        if (place == ir_list_tail) {
+    if (place == NULL && place != ir_list_tail)
+        return NULL;
+    else if (place == NULL && place == ir_list_tail){
         ir_list_tail = code;
+        code->prev = NULL;
         code->next = NULL;
-    } else {
-        if (place->next) place->next->prev = code;
-        code->next = place->next;
+
+        ir_list_head = ir_list_tail;
     }
-    code->prev = place;
-    place->next = code;
+    else if (place == ir_list_tail){
+        code->prev = ir_list_tail;
+        code->next = NULL;
+
+        ir_list_tail->next = code;
+        ir_list_tail = ir_list_tail->next;
+    }
+    else{
+        if (place->next != NULL)
+            place->next->prev = code;
+        code->next = place->next;
+        code->prev = place;
+        place->next = code;
+    }
+    
     return code;
 }
 
+IROperand* ir_clean_temp_var(IROperand* temp_operand) {
+    assert(temp_operand->kind == OP_TEMP_VAR);
+    
+    if (ir_list_tail->kind == IR_ASSIGN && ir_list_tail->dst == temp_operand) {
+        free(temp_operand);
+        struct ir_code *p = ir_list_tail;
+        struct ir_operand *ret = p->src;
+        ir_list_tail = ir_list_tail->prev;
+        ir_list_tail->next = NULL;
+        free(p);
+        //count_temp_var--;
+        return ret;
+    }
+    return temp_operand;
+}
 
 
