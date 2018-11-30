@@ -5,30 +5,39 @@
 #include<stdlib.h>
 #include<stdbool.h>
 #include<string.h>
+#include<assert.h>
 #include "SyntaxTree.h"
 
 typedef struct IROperand_ {
-    enum op_type {
+    /* The type of operands */
+    enum OP_TYPE {
         OP_VARIABLE,
         OP_IMMEDIATE,
         OP_TEMP_VAR,
         OP_LABEL,
         OP_FUNCTION
     } kind;
-    enum modifier_type {
+
+    /* Whether the operand is only a varibale or an address or the dereferenced */
+    enum MODIFIER_TYPE {
         OP_MDF_NONE,
-        OP_MDF_AND,
-        OP_MDF_STAR
+        OP_MDF_FETCH_ADDR,
+        OP_MDF_DEREFERENCE
     } modifier;
+
+    /* Identify different temporary variables */
     union {
-        int no;
-        int val_int;
-        char* name;
+        int var_label_num;
+        int value_int;
+        float value_float;
+        char* var_func_name;
     };
 } IROperand;
 
 typedef struct IRCode_ {
-    enum ir_type {
+
+    /* The type of a piece of intermediate representation */
+    enum IR_TYPE {
         IR_LABEL,
         IR_FUNCTION,
         IR_ASSIGN,
@@ -46,6 +55,8 @@ typedef struct IRCode_ {
         IR_READ,
         IR_WRITE,
     } kind;
+    
+    /* The places for result and temporary variables */
     union {
         struct {
             IROperand* dst;
@@ -54,17 +65,23 @@ typedef struct IRCode_ {
                     IROperand* src1;
                     IROperand* src2;
                 };
-                IROperand* src;
+                IROperand* merged_src;
             };
         };
-        struct { // 1-operand
-            IROperand* op;
+
+        struct { 
+            // 1-operand
+            IROperand* src;
         };
-        struct { // for RETURN only
+
+        struct { 
+            // for RETURN only
             IROperand* ret;
             IROperand* func;
         };
     };
+
+    /* The type of relop operation */
     union {
         enum relop_type {
             RELOP_EQ,
@@ -76,22 +93,27 @@ typedef struct IRCode_ {
         } relop;
         int size;
     };
+
+    /* A bi-direction list */
     struct IRCode_* prev;
     struct IRCode_* next;
 } IRCode;
 
-IRCode* ir_list;
+IRCode* ir_list_head;
 IRCode* ir_list_tail;
 
 IRCode* remove_ir_code(IRCode* code);
 IRCode* insert_ir_code_before(IRCode* place, IRCode* code);
 IRCode* insert_ir_code_after(IRCode* place, IRCode* code);
 
-inline IROperand* new_temp_var();
-inline IROperand* new_variable();
-inline IROperand* new_label();
+/* Create a new intermediate representation symbol */
+IROperand* New_Temp_Var();
+IROperand* New_Variable();
+IROperand* New_Label();
 
-char* get_operand_str(IROperand* op);
+/* Obtain the operand name and its representation */
+char* Get_Operand_Representation(IROperand* operand);
+
 void add_ir_code(IRCode* code);
 void print_ir_code(FILE*, IRCode* code);
 void print_ir_list(FILE *fp);
