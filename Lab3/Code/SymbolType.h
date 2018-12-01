@@ -5,6 +5,7 @@
 #include<stdio.h>
 #include<stdbool.h>
 #include "SyntaxTree.h"
+#include "IRgeneration.h"
 
 /* Declarations for structure definition,
  * specific details showed below.
@@ -38,7 +39,7 @@ typedef struct Structure_ {
     struct FieldList_* fields;
 } Structure;
 
-/* Structure for parameters in a function */
+/* Structure for formal parameters in a function */
 typedef struct FuncParamList_ {
     struct Type_* param_type;
     /* Name of the parameter */
@@ -74,6 +75,7 @@ typedef struct Type_ {
     };
 } Type;
 
+/* Structure for Arguments in functions */
 typedef struct FuncArgsList_ {
     struct Type_* args_type;
     /* prev: for convenience of deletion
@@ -81,6 +83,9 @@ typedef struct FuncArgsList_ {
      */
     struct FuncArgsList_* prev;
     struct FuncArgsList_* next;
+    
+    /* Store every argument's operand */
+    IROperand* operand;
 } FuncArgsList;
 
 typedef struct StructureSymbol_ {
@@ -98,6 +103,8 @@ typedef struct SymbolRecord_ {
     struct Type_* symbol_type;
     /* Syntax tree node for the scope of some functions */
     TreeNode* tree_node;
+    /* For variable symbol only */
+    IROperand* operand;
 } SymbolRecord;
 
 /* Create a node that belongs to BASIC */
