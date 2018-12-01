@@ -384,10 +384,12 @@ Type* DFS_Var_Declared(TreeNode* cur_root, char **symbol_id, Type* type_id){
     assert(strcmp(cur_root->type, "VarDec") == 0);
 
     if (strcmp(CHILD(cur_root, 1)->type, "ID") == 0){
+        // VarDec: ID
         *symbol_id = DFS_Id(CHILD(cur_root, 1));
         return type_id;
     }
-
+    
+    // VarDec: VarDec LB INT RB
     TreeNode* tree_node = cur_root;
     ArraySizeList* head_node = malloc(sizeof(ArraySizeList));
 
@@ -424,6 +426,7 @@ FieldList* DFS_Declared(TreeNode* cur_root, Type* type_id){
     pt->prev = NULL;
 
     if (func_ret_type == NULL){
+        // Now in structure
         if (CHILD(cur_root, 3) != NULL)
             Report_Errors(15, cur_root);
     } 
