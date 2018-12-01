@@ -32,6 +32,11 @@ typedef struct IROperand_ {
         float value_float;
         char* var_func_name;
     };
+
+    /* TODO:
+     * Distinguish float, int, char*...
+     */
+
 } IROperand;
 
 typedef struct IRCode_ {
@@ -75,7 +80,7 @@ typedef struct IRCode_ {
 
         struct { 
             // for RETURN only
-            IROperand* ret;
+            IROperand* rtn;
             IROperand* func;
         };
     };
@@ -83,14 +88,15 @@ typedef struct IRCode_ {
     /* The type of relop operation */
     union {
         enum relop_type {
-            RELOP_EQ,
+            RELOP_EQ = 0,
             RELOP_NEQ,
             RELOP_G,
             RELOP_L,
             RELOP_GE,
             RELOP_LE,
         } relop;
-        int size;
+        int declared_size;
+        bool none_flag;
     };
 
     /* A bi-direction list */
@@ -116,6 +122,7 @@ IRCode* Insert_IR_Code_After(IRCode* place, IRCode* code);
 IROperand* New_Temp_Var();
 IROperand* New_Variable();
 IROperand* New_Label();
+IROperand* New_Immediate(int val_res);
 
 /* Obtain the operand name and its representation */
 char* Get_Operand_Representation(IROperand* operand);
@@ -123,10 +130,20 @@ char* Get_Operand_Representation(IROperand* operand);
 /* Remove some temporary variables */
 IROperand* Clean_IR_Temp_Var(IROperand* temp_operand);
 
-/* TODO */
-void add_ir_code(IRCode* code);
-void print_ir_code(FILE*, IRCode* code);
-void print_ir_list(FILE *fp);
-void ir_clean_assign();
+/* Add new intermediate code */
+void Add_IR_Code(IRCode* code);
+
+/* Remove some unnecessary assignment */
+void Clean_IR_Assign();
+
+/* Obtain the operand representation */
+inline char* Operand(IROperand* operand);
+
+/* Output the intermediate representation to the file */
+void Print_IR_Code(FILE* file, IRCode* code);
+void Print_IR_Code_List(FILE *fp);
+
+/* Delete all IRCode* node in IR_list */
+void Delete_IR_List();
 
 #endif
