@@ -3,6 +3,50 @@
 /* Record the type of return value of a given function */
 static Type* func_ret_type;
 
+/* Add new intermediate representation code to IR_list */
+void Gen_Code(IR_TYPE ir_type, IROperand* dst, IROperand* src1, IROperand* src2, RELOP_TYPE relop){
+    IRCode* new_ir_code = malloc(sizeof(IRCode));
+
+    switch(ir_type){
+        case IR_LABEL:
+        case IR_FUNCTION:
+        case IR_ASSIGN:
+        case IR_ADD:
+        case IR_SUB:
+        case IR_MUL:
+        case IR_DIV:
+        case IR_GOTO:
+        case IR_IF_GOTO:
+        case IR_RETURN:
+        case IR_DEC:
+        case IR_ARG:
+        case IR_CALL:
+        case IR_PARAM:
+        case IR_READ:
+        case IR_WRITE:
+        default: assert(false);
+    }
+
+    if (new_ir_code != NULL)
+        Add_IR_Code(new_ir_code);
+    else
+        assert(false);
+}
+
+/* Generate new immediate operand */
+IROperand* Gen_Imme_Op(int value_int, float value_float, bool flag){
+    IROperand* new_imme = malloc(sizeof(IROperand));
+    new_imme->kind = OP_IMMEDIATE;
+    new_imme->modifier = OP_MDF_NONE;
+
+    if (flag=true)
+        new_imme->value_int = value_int;
+    else
+        new_imme->value_float = value_float;
+
+    return new_imme;
+}
+
 /* A method for semantic analysis */
 void Semantic_Analysis(){
     DFS(root);

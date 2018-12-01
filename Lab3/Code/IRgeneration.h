@@ -8,22 +8,58 @@
 #include<assert.h>
 #include "SyntaxTree.h"
 
+/* Define the types of operations */
+typedef enum IR_TYPE_ {
+    IR_LABEL=0,
+    IR_FUNCTION,
+    IR_ASSIGN,
+    IR_ADD,
+    IR_SUB,
+    IR_MUL,
+    IR_DIV,
+    IR_GOTO,
+    IR_IF_GOTO,
+    IR_RETURN,
+    IR_DEC,
+    IR_ARG,
+    IR_CALL,
+    IR_PARAM,
+    IR_READ,
+    IR_WRITE,
+} IR_TYPE;
+
+/* Define the type of relop */
+typedef enum RELOP_TYPE_ {
+    RELOP_EQ = 0,
+    RELOP_NEQ,
+    RELOP_G,
+    RELOP_L,
+    RELOP_GE,
+    RELOP_LE,
+} RELOP_TYPE;
+
+/* Define the type of operands */
+typedef enum OP_TYPE_ {
+    OP_VARIABLE,
+    OP_IMMEDIATE,
+    OP_TEMP_VAR,
+    OP_LABEL,
+    OP_FUNCTION
+} OP_TYPE;
+
+/* Define the type of modifiers */
+typedef enum MODIFIER_TYPE_ {
+    OP_MDF_NONE,
+    OP_MDF_FETCH_ADDR,
+    OP_MDF_DEREFERENCE
+} MODIFIER_TYPE;
+
 typedef struct IROperand_ {
     /* The type of operands */
-    enum OP_TYPE {
-        OP_VARIABLE,
-        OP_IMMEDIATE,
-        OP_TEMP_VAR,
-        OP_LABEL,
-        OP_FUNCTION
-    } kind;
+    OP_TYPE kind;
 
     /* Whether the operand is only a varibale or an address or the dereferenced */
-    enum MODIFIER_TYPE {
-        OP_MDF_NONE,
-        OP_MDF_FETCH_ADDR,
-        OP_MDF_DEREFERENCE
-    } modifier;
+    MODIFIER_TYPE modifier;
 
     /* Identify different temporary variables */
     union {
@@ -41,24 +77,7 @@ typedef struct IROperand_ {
 
 typedef struct IRCode_ {
     /* The type of a piece of intermediate representation */
-    enum IR_TYPE {
-        IR_LABEL=0,
-        IR_FUNCTION,
-        IR_ASSIGN,
-        IR_ADD,
-        IR_SUB,
-        IR_MUL,
-        IR_DIV,
-        IR_GOTO,
-        IR_IF_GOTO,
-        IR_RETURN,
-        IR_DEC,
-        IR_ARG,
-        IR_CALL,
-        IR_PARAM,
-        IR_READ,
-        IR_WRITE,
-    } kind;
+    IR_TYPE kind;
     
     /* The places for result and temporary variables */
     union {
@@ -87,14 +106,7 @@ typedef struct IRCode_ {
 
     /* The type of relop operation */
     union {
-        enum RELOP_TYPE {
-            RELOP_EQ = 0,
-            RELOP_NEQ,
-            RELOP_G,
-            RELOP_L,
-            RELOP_GE,
-            RELOP_LE,
-        } relop;
+        RELOP_TYPE relop;
         int declared_size;
         bool none_flag;
     };
@@ -135,12 +147,6 @@ void Clean_IR_Assign();
 
 /* Add new intermediate code */
 void Add_IR_Code(IRCode* code);
-
-/* Generate new intemediate code */
-void Gen_Code(enum IR_TYPE ir_type, IROperand* dst, IROperand* src1, IROperand* src2, enum RELOP_TYPE relop);
-
-/* Generate new immediate operand */
-IROperand* Gen_Imme_Op(int value_int, float value_float, bool flag);
 
 /* Obtain the operand representation */
 char* Operand(IROperand* operand);
