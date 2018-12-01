@@ -4,29 +4,67 @@
 static Type* func_ret_type;
 
 /* Add new intermediate representation code to IR_list */
-void Gen_Code(IR_TYPE ir_type, IROperand* dst, IROperand* src1, IROperand* src2, RELOP_TYPE relop){
+void Gen_3_Operands_Code(IR_TYPE ir_type, IROperand* dst, IROperand* src1, IROperand* src2, RELOP_TYPE relop){
     IRCode* new_ir_code = malloc(sizeof(IRCode));
+    new_ir_code->kind = ir_type;
+    new_ir_code->dst = dst;
+    new_ir_code->src1 = src1;
+    new_ir_code->src2 = src2;
 
     switch(ir_type){
-        case IR_LABEL:
-        case IR_FUNCTION:
-        case IR_ASSIGN:
-        case IR_ADD:
-        case IR_SUB:
-        case IR_MUL:
-        case IR_DIV:
-        case IR_GOTO:
-        case IR_IF_GOTO:
-        case IR_RETURN:
-        case IR_DEC:
-        case IR_ARG:
-        case IR_CALL:
-        case IR_PARAM:
-        case IR_READ:
-        case IR_WRITE:
+        case IR_ADD:case IR_SUB:case IR_MUL:case IR_DIV:{
+            new_ir_code->none_flag= false;
+            break;
+        }
+        case IR_IF_GOTO:{
+            new_ir_code->relop = relop;
+            break;
+        }
         default: assert(false);
     }
 
+    if (new_ir_code != NULL)
+        Add_IR_Code(new_ir_code);
+    else
+        assert(false);
+}
+
+/* Add new intermediate representation code to IR_list */
+void Gen_2_Operands_Code(IR_TYPE ir_type, IROperand* dst, IROperand* src, int size){
+    IRCode* new_ir_code = malloc(sizeof(IRCode));
+    new_ir_code->kind = ir_type;
+
+    switch(ir_type){
+        case IR_DEC:{
+            new_ir_code->declared_size = size;
+            new_ir_code->src = src;
+        }
+        case IR_ASSIGN:{
+            new_ir_code->dst = dst;
+            new_ir_code->src = src;
+            break;
+        }
+        case IR_CALL:{
+            new_ir_code->rtn = dst;
+            new_ir_code->func = src;
+            break;
+        }
+        default: assert(false);
+    }
+
+    if (new_ir_code != NULL)
+        Add_IR_Code(new_ir_code);
+    else
+        assert(false);
+}
+
+/* Add new intermediate representation code to IR_list */
+void Gen_1_Operands_Code(IR_TYPE ir_type, IROperand* src){
+    IRCode* new_ir_code = malloc(sizeof(IRCode));
+    new_ir_code->kind = ir_type;
+    new_ir_code->src = src;
+    new_ir_code->none_flag = false;
+    
     if (new_ir_code != NULL)
         Add_IR_Code(new_ir_code);
     else

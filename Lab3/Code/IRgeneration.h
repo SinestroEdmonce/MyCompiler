@@ -36,6 +36,7 @@ typedef enum RELOP_TYPE_ {
     RELOP_L,
     RELOP_GE,
     RELOP_LE,
+    NONE_TYPE,
 } RELOP_TYPE;
 
 /* Define the type of operands */
