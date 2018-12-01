@@ -14,6 +14,7 @@ const char* RELOP[] = {
     "==", "!=", ">", "<", ">=", "<="
 };
 
+
 IROperand* New_Temp_Var(){
     /* Initialize and create new instances */
     IROperand* new_operand = malloc(sizeof(IROperand));
@@ -64,7 +65,7 @@ IROperand* New_Immediate(int val_res){
 }
 
 /* Obtain the operand representation */
-char* Get_operand_Representation(IROperand* operand){
+char* Get_Operand_Representation(IROperand* operand){
     char buffer[128];
 
     /* Obtain the modifier before the operand */
@@ -299,8 +300,8 @@ void Clean_IR_Assign(){
     /* TODO */
 }
 
-inline char* Operand(IROperand* op){
-    return Get_Operand_Representation(op);
+char* Operand(IROperand* operand){
+    return Get_Operand_Representation(operand);
 }
 
 /* Output the intermediate representation code to the file */
@@ -399,4 +400,48 @@ void Delete_IR_List(){
         free(tmp);
     }
     ir_list_head = ir_list_tail = NULL;
+}
+
+/* Add new intermediate representation code to IR_list */
+void Gen_Code(enum IR_TYPE ir_type, IROperand* dst, IROperand* src1, IROperand* src2, enum RELOP_TYPE relop){
+    IRCode* new_ir_code = malloc(sizeof(IRCode));
+
+    switch(ir_type){
+        case IR_LABEL:
+        case IR_FUNCTION:
+        case IR_ASSIGN:
+        case IR_ADD:
+        case IR_SUB:
+        case IR_MUL:
+        case IR_DIV:
+        case IR_GOTO:
+        case IR_IF_GOTO:
+        case IR_RETURN:
+        case IR_DEC:
+        case IR_ARG:
+        case IR_CALL:
+        case IR_PARAM:
+        case IR_READ:
+        case IR_WRITE:
+        default: assert(false);
+    }
+
+    if (new_ir_code != NULL)
+        Add_IR_Code(new_ir_code);
+    else
+        assert(false);
+}
+
+/* Generate new immediate operand */
+IROperand* Gen_Imme_Op(int value_int, float value_float, bool flag){
+    IROperand* new_imme = malloc(sizeof(IROperand));
+    new_imme->kind = OP_IMMEDIATE;
+    new_imme->modifier = OP_MDF_NONE;
+
+    if (flag=true)
+        new_imme->value_int = value_int;
+    else
+        new_imme->value_float = value_float;
+
+    return new_imme;
 }

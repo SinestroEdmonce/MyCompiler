@@ -42,7 +42,7 @@ typedef struct IROperand_ {
 typedef struct IRCode_ {
     /* The type of a piece of intermediate representation */
     enum IR_TYPE {
-        IR_LABEL,
+        IR_LABEL=0,
         IR_FUNCTION,
         IR_ASSIGN,
         IR_ADD,
@@ -87,7 +87,7 @@ typedef struct IRCode_ {
 
     /* The type of relop operation */
     union {
-        enum relop_type {
+        enum RELOP_TYPE {
             RELOP_EQ = 0,
             RELOP_NEQ,
             RELOP_G,
@@ -130,14 +130,20 @@ char* Get_Operand_Representation(IROperand* operand);
 /* Remove some temporary variables */
 IROperand* Clean_IR_Temp_Var(IROperand* temp_operand);
 
-/* Add new intermediate code */
-void Add_IR_Code(IRCode* code);
-
 /* Remove some unnecessary assignment */
 void Clean_IR_Assign();
 
+/* Add new intermediate code */
+void Add_IR_Code(IRCode* code);
+
+/* Generate new intemediate code */
+void Gen_Code(enum IR_TYPE ir_type, IROperand* dst, IROperand* src1, IROperand* src2, enum RELOP_TYPE relop);
+
+/* Generate new immediate operand */
+IROperand* Gen_Imme_Op(int value_int, float value_float, bool flag);
+
 /* Obtain the operand representation */
-inline char* Operand(IROperand* operand);
+char* Operand(IROperand* operand);
 
 /* Output the intermediate representation to the file */
 void Print_IR_Code(FILE* file, IRCode* code);
