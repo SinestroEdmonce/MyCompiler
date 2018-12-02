@@ -188,7 +188,7 @@ Type* Translate_DFS_Expression(TreeNode* cur_root){
             SymbolRecord* symbol = Find_Var_Func_Symbol(id_name);
 
             if (symbol == NULL){
-                Report_Errors(1, CHILD(cur_root, 1));
+                // Report_Errors(1, CHILD(cur_root, 1));
                 return NULL;
             }
             return symbol->symbol_type;
@@ -216,7 +216,7 @@ Type* Translate_DFS_Expression(TreeNode* cur_root){
             else if (type_exp->kind == BASIC)
                 return type_exp;
             else{
-                Report_Errors(7, CHILD(cur_root, 2));
+                // Report_Errors(7, CHILD(cur_root, 2));
                 return NULL;
             }
         }
@@ -227,7 +227,7 @@ Type* Translate_DFS_Expression(TreeNode* cur_root){
             if (type_exp->kind == BASIC && type_exp->basic == TYPE_INT)
                 return type_exp;
             else{
-                Report_Errors(7, CHILD(cur_root, 2));
+                // Report_Errors(7, CHILD(cur_root, 2));
                 return NULL;
             }
         }
@@ -266,11 +266,11 @@ Type* Translate_DFS_Expression(TreeNode* cur_root){
                 left_value_flag = child_depend->left_value;
             
             if (left_value_flag == NOT_LEFT_VALUE){
-                Report_Errors(6, CHILD(cur_root, 1));
+                // Report_Errors(6, CHILD(cur_root, 1));
                 return NULL;
             }
             if (Translate_Is_Type_Equal(left_exp_type, right_exp_type) == false){
-                Report_Errors(5, cur_root);
+                // Report_Errors(5, cur_root);
                 return NULL;
             }
             return left_exp_type;
@@ -282,7 +282,7 @@ Type* Translate_DFS_Expression(TreeNode* cur_root){
                 return NULL;
             
             if (exp_type->kind != STRUCTURE){
-                Report_Errors(13, CHILD(cur_root, 1));
+                // Report_Errors(13, CHILD(cur_root, 1));
                 return NULL;
             }
 
@@ -290,7 +290,7 @@ Type* Translate_DFS_Expression(TreeNode* cur_root){
             if (field_type != NULL)
                 return field_type;
             else{
-                Report_Errors(14, CHILD(cur_root, 3));
+                // Report_Errors(14, CHILD(cur_root, 3));
                 return NULL;
             }
         }
@@ -302,23 +302,23 @@ Type* Translate_DFS_Expression(TreeNode* cur_root){
                 return NULL;
             
             if (Translate_Is_Type_Equal(left_exp_type, right_exp_type) == false){
-                Report_Errors(7, cur_root);
+                // Report_Errors(7, cur_root);
                 return NULL;
             }
 
             if (strcmp(CHILD(cur_root, 2)->type, "OR") == 0 || strcmp(CHILD(cur_root, 2)->type, "AND") == 0){
                 if (left_exp_type->kind != BASIC){
-                    Report_Errors(7, cur_root);
+                    // Report_Errors(7, cur_root);
                     return NULL;
                 }
                 if (left_exp_type->basic != TYPE_INT){
-                    Report_Errors(7, cur_root);
+                    // Report_Errors(7, cur_root);
                     return NULL;
                 }
             }
             else{
                 if (left_exp_type->kind != BASIC){
-                    Report_Errors(7, cur_root);
+                    // Report_Errors(7, cur_root);
                     return NULL;
                 }
             }
@@ -330,12 +330,12 @@ Type* Translate_DFS_Expression(TreeNode* cur_root){
         SymbolRecord* func_symbol = Find_Var_Func_Symbol(Translate_DFS_Id(CHILD(cur_root, 1)));
 
         if (func_symbol == NULL){
-            Report_Errors(2, CHILD(cur_root, 1));
+            // Report_Errors(2, CHILD(cur_root, 1));
             return NULL;
         }
 
         if (func_symbol->symbol_type->kind != FUNCTION){
-            Report_Errors(11, CHILD(cur_root, 1));
+            // Report_Errors(11, CHILD(cur_root, 1));
             return NULL;
         }
 
@@ -345,7 +345,7 @@ Type* Translate_DFS_Expression(TreeNode* cur_root){
         
         FuncParamList* param_list = func_symbol->symbol_type->func.param_list;
         if (Translate_Is_Params_Args_Equal(param_list, args_list) == false)
-            Report_Errors(9, CHILD(cur_root, 3));
+            // Report_Errors(9, CHILD(cur_root, 3));
         
         return func_symbol->symbol_type->func.rtn;
     }
@@ -354,8 +354,9 @@ Type* Translate_DFS_Expression(TreeNode* cur_root){
         Type* left_exp_type = Translate_DFS_Expression(CHILD(cur_root, 1));
 
         Type* pt = NULL;
-        if (left_exp_type == NULL || left_exp_type->kind != ARRAY)
-            Report_Errors(10, CHILD(cur_root, 0));
+        if (left_exp_type == NULL || left_exp_type->kind != ARRAY){
+            // Report_Errors(10, CHILD(cur_root, 0));
+        }
         else{
             pt = malloc(sizeof(Type));
             // Create a copy 
@@ -370,7 +371,7 @@ Type* Translate_DFS_Expression(TreeNode* cur_root){
 
         Type* right_exp_type = Translate_DFS_Expression(CHILD(cur_root, 3));
         if (right_exp_type == NULL || right_exp_type->kind != BASIC || right_exp_type->basic != TYPE_INT)
-            Report_Errors(12, CHILD(cur_root, 3));
+            // Report_Errors(12, CHILD(cur_root, 3));
 
         return pt;   
     }
@@ -427,20 +428,24 @@ FieldList* Translate_DFS_Declared(TreeNode* cur_root, Type* type_id){
 
     if (func_ret_type4translate == NULL){
         // Now in structure
-        if (CHILD(cur_root, 3) != NULL)
-            Report_Errors(15, cur_root);
+        if (CHILD(cur_root, 3) != NULL){
+            // Report_Errors(15, cur_root);
+        }
     } 
     else if (CHILD(cur_root, 3) != NULL){
         Type* exp_type_id = Translate_DFS_Expression(CHILD(cur_root, 3));
 
-        if (Translate_Is_Type_Equal(exp_type_id, pt->field_type) == false)
-            Report_Errors(5, cur_root);
+        if (Translate_Is_Type_Equal(exp_type_id, pt->field_type) == false){
+            // Report_Errors(5, cur_root);
+        }
     }
     if (Insert_Var_Symbol(pt->field_name, pt->field_type) == false){
-        if (func_ret_type4translate == NULL)
-            Report_Errors(15, cur_root->child); 
-        else
-            Report_Errors(3, cur_root->child);
+        if (func_ret_type4translate == NULL){
+            // Report_Errors(15, cur_root->child);
+        } 
+        else{
+            // Report_Errors(3, cur_root->child);
+        }
 
         free(pt);
         return NULL;
@@ -521,8 +526,9 @@ Structure* Translate_DFS_Structure_Specifier(TreeNode* cur_root){
 
         char* structure_name = Translate_DFS_Opt_Tag(CHILD(cur_root, 2));
         /* If find the same structure name in structure hashtable */
-        if (Insert_Structure_Symbol(structure_name, structure) == false)
-            Report_Errors(16, CHILD(cur_root, 2));
+        if (Insert_Structure_Symbol(structure_name, structure) == false){
+            // Report_Errors(16, CHILD(cur_root, 2));
+        }
     }
     else if (strcmp(CHILD(cur_root, 2)->type, "LC") == 0){
         // StructSpecifier: STRUCT LC DefList RC
@@ -544,7 +550,7 @@ Structure* Translate_DFS_Structure_Specifier(TreeNode* cur_root){
         if (structure_symbol != NULL)
             structure = structure_symbol->structure_type;
         else{
-            Report_Errors(17, CHILD(cur_root, 2));
+            // Report_Errors(17, CHILD(cur_root, 2));
             return NULL;
         }
     }
@@ -584,7 +590,7 @@ void Translate_DFS_Extern_Declared_List(TreeNode* cur_root, Type* type_id){
     char* symbol_id;
     Type* var_type = Translate_DFS_Var_Declared(CHILD(cur_root, 1), &symbol_id, type_id);
     if (Insert_Var_Symbol(symbol_id, var_type) == false) 
-        Report_Errors(3, cur_root);
+        // Report_Errors(3, cur_root);
     
     if (CHILD(cur_root, 3) != NULL)
         Translate_DFS_Extern_Declared_List(CHILD(cur_root, 3), type_id);
@@ -677,11 +683,13 @@ void Translate_DFS_Func_Declared(TreeNode* cur_root, Type* rtn, bool declared_on
                 FuncParamList* pt_new = func_type->func.param_list;
                 FuncParamList* pt_declared = var_func_symbol->symbol_type->func.param_list;
 
-                if (Translate_Is_Params_Equal(pt_new, pt_declared) == false)
-                    Report_Errors(19, cur_root);
+                if (Translate_Is_Params_Equal(pt_new, pt_declared) == false){
+                    // Report_Errors(19, cur_root);
+                }
             }
-            else
-                Report_Errors(4, cur_root);
+            else{
+                // Report_Errors(4, cur_root);
+            }
         }
         else
             Insert_Func_Symbol(func_id, func_type, cur_root);
@@ -694,13 +702,16 @@ void Translate_DFS_Func_Declared(TreeNode* cur_root, Type* rtn, bool declared_on
             FuncParamList* pt_declared = var_func_symbol->symbol_type->func.param_list;
             FuncParamList* pt_new = func_type->func.param_list;
 
-            if (Translate_Is_Params_Equal(pt_new, pt_declared) == false)
-                Report_Errors(19, cur_root);
-            else
+            if (Translate_Is_Params_Equal(pt_new, pt_declared) == false){
+                // Report_Errors(19, cur_root);
+            }
+            else{
                 Delete_Var_Func_Symbol(func_id);
+            }
         }
-        if (Insert_Func_Symbol(func_id, func_type, cur_root) == false)
-            Report_Errors(4, CHILD(cur_root, 1));
+        if (Insert_Func_Symbol(func_id, func_type, cur_root) == false){
+            // Report_Errors(4, CHILD(cur_root, 1));
+        }
     }
 }
 
@@ -731,7 +742,7 @@ void Translate_DFS_Stmt(TreeNode* cur_root){
         Type* rtn_type = Translate_DFS_Expression(CHILD(cur_root, 2));
 
         if (Translate_Is_Type_Equal(rtn_type, func_ret_type4translate) == false){
-            Report_Errors(8, CHILD(cur_root, 2));
+            // Report_Errors(8, CHILD(cur_root, 2));
             return;
         }
     }
