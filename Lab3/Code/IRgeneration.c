@@ -483,3 +483,24 @@ IROperand* Gen_Imme_Op(int value_int, float value_float, bool flag){
 
     return new_imme;
 }
+
+/* Generate new operands */
+IROperand* Gen_Operand(OP_TYPE op_type, MODIFIER_TYPE mod_type, int num, char* name){
+    IROperand* new_op = malloc(sizeof(IROperand));
+    new_op->kind = op_type;
+    new_op->modifier = mod_type;
+
+    switch(op_type){
+        case OP_LABEL:case OP_TEMP_VAR:{
+            new_op->var_label_num = num;
+            break;
+        }
+        case OP_VARIABLE:{case OP_FUNCTION:{
+            new_op->var_func_name = name;
+            break;
+        }
+        default: assert(false);
+    }
+
+    return new_op;
+}

@@ -171,4 +171,7 @@ void Gen_1_Operands_Code(IR_TYPE ir_type, IROperand* src);
 /* Generate new immediate operand */
 IROperand* Gen_Imme_Op(int value_int, float value_float, bool flag);
 
+/* Generate new other operands */
+IROperand* Gen_Operand(OP_TYPE op_type, MODIFIER_TYPE mod_type, int num, char* name);
+
 #endif
