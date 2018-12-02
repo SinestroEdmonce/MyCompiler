@@ -406,3 +406,18 @@ void Check_Declared_Func() {
         pt = pt->stack_next;
     }
 }
+
+/* A Function used to reset the hashtable, the scopestack and the scope level */
+void Reset_All(){
+    scope_level = 0;
+    scope_backup = -1;
+
+    int idx = 0;
+    for (; idx<=HASHTABLE_LENGTH; ++idx){
+        var_func_hashtable[idx] = NULL;
+        structure_hashtable[idx] = NULL;
+    }
+
+    for (idx=0; idx<=MAX_SCOPE_NUM;++idx)
+        symbol_scope_stack[idx] = NULL;
+}

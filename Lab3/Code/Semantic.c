@@ -634,10 +634,7 @@ FuncParamList* Semantic_DFS_Var_List(TreeNode* cur_root){
     if (CHILD(cur_root, 3) != NULL){
         pt->next = Semantic_DFS_Var_List(CHILD(cur_root, 3));
         if (pt->next != NULL)
-            pt->next->prev = NULL;
-    }
-    if (pt->param_type == NULL){
-        free(pt);
+            pt->next->prev = pt;
     }
     if (pt->param_type == NULL) {
         FuncParamList* rtn = pt->next;

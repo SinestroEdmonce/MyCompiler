@@ -77,4 +77,7 @@ void Push_Scope();
 /* A Function used to pop out a scope in the stack */
 void Pop_Scope();
 
+/* A Function used to reset the hashtable, the scopestack and the scope level */
+void Reset_All();
+
 #endif
