@@ -1,147 +1,65 @@
 #include "Semantic.h"
 
 /* Record the type of return value of a given function */
-static Type* func_ret_type;
-
-/* Add new intermediate representation code to IR_list */
-void Gen_3_Operands_Code(IR_TYPE ir_type, IROperand* dst, IROperand* src1, IROperand* src2, RELOP_TYPE relop){
-    IRCode* new_ir_code = malloc(sizeof(IRCode));
-    new_ir_code->kind = ir_type;
-    new_ir_code->dst = dst;
-    new_ir_code->src1 = src1;
-    new_ir_code->src2 = src2;
-
-    switch(ir_type){
-        case IR_ADD:case IR_SUB:case IR_MUL:case IR_DIV:{
-            new_ir_code->none_flag= false;
-            break;
-        }
-        case IR_IF_GOTO:{
-            new_ir_code->relop = relop;
-            break;
-        }
-        default: assert(false);
-    }
-
-    if (new_ir_code != NULL)
-        Add_IR_Code(new_ir_code);
-    else
-        assert(false);
-}
-
-/* Add new intermediate representation code to IR_list */
-void Gen_2_Operands_Code(IR_TYPE ir_type, IROperand* dst, IROperand* src, int size){
-    IRCode* new_ir_code = malloc(sizeof(IRCode));
-    new_ir_code->kind = ir_type;
-
-    switch(ir_type){
-        case IR_DEC:{
-            new_ir_code->declared_size = size;
-            new_ir_code->src = src;
-        }
-        case IR_ASSIGN:{
-            new_ir_code->dst = dst;
-            new_ir_code->src = src;
-            break;
-        }
-        case IR_CALL:{
-            new_ir_code->rtn = dst;
-            new_ir_code->func = src;
-            break;
-        }
-        default: assert(false);
-    }
-
-    if (new_ir_code != NULL)
-        Add_IR_Code(new_ir_code);
-    else
-        assert(false);
-}
-
-/* Add new intermediate representation code to IR_list */
-void Gen_1_Operands_Code(IR_TYPE ir_type, IROperand* src){
-    IRCode* new_ir_code = malloc(sizeof(IRCode));
-    new_ir_code->kind = ir_type;
-    new_ir_code->src = src;
-    new_ir_code->none_flag = false;
-    
-    if (new_ir_code != NULL)
-        Add_IR_Code(new_ir_code);
-    else
-        assert(false);
-}
-
-/* Generate new immediate operand */
-IROperand* Gen_Imme_Op(int value_int, float value_float, bool flag){
-    IROperand* new_imme = malloc(sizeof(IROperand));
-    new_imme->kind = OP_IMMEDIATE;
-    new_imme->modifier = OP_MDF_NONE;
-
-    if (flag=true)
-        new_imme->value_int = value_int;
-    else
-        new_imme->value_float = value_float;
-
-    return new_imme;
-}
+static Type* func_ret_type4semantic;
 
 /* A method for semantic analysis */
 void Semantic_Analysis(){
-    DFS(root);
+    Semantic_DFS(root);
 }
 
 /* A deepth-first traversal method */
-void DFS(TreeNode* cur_root){
+void Semantic_DFS(TreeNode* cur_root){
     assert(cur_root != NULL); 
     
     if (strcmp(cur_root->type, "ExtDef") == 0){
-        DFS_Extern_Defined(cur_root);
+        Semantic_DFS_Extern_Defined(cur_root);
     }
     else if (strcmp(cur_root->type, "CompSt") == 0){
-        DFS_CompSt(cur_root);
+        Semantic_DFS_CompSt(cur_root);
     }
     else if (strcmp(cur_root->type, "Exp") == 0){
-        DFS_Expression(cur_root);
+        Semantic_DFS_Expression(cur_root);
     }
     else if (strcmp(cur_root->type, "Stmt") == 0){
-        DFS_Stmt(cur_root);
+        Semantic_DFS_Stmt(cur_root);
     }
     else{
         TreeNode* child = NULL;
         for (child = cur_root->child; child!=NULL; child=child->sibling)
-            DFS(child);
+            Semantic_DFS(child);
     }
 }
 
-char* DFS_Id(TreeNode* cur_root) {
+char* Semantic_DFS_Id(TreeNode* cur_root) {
     assert(strcmp(cur_root->type, "ID") == 0);
     return cur_root->value;
 }
 
-int DFS_Int(TreeNode* cur_root) {
+int Semantic_DFS_Int(TreeNode* cur_root) {
     assert(strcmp(cur_root->type, "INT") == 0);
     return cur_root->value_as_its_type.int_value;
 }
 
-float DFS_Float(TreeNode* cur_root) {
+float Semantic_DFS_Float(TreeNode* cur_root) {
     assert(strcmp(cur_root->type, "FLOAT") == 0);
     return cur_root->value_as_its_type.double_value;
 }
 
 /* Obtain the var/struct/func name */
-char* DFS_Opt_Tag(TreeNode* cur_root){
+char* Semantic_DFS_Opt_Tag(TreeNode* cur_root){
     assert(strcmp(cur_root->type, "OptTag") == 0);
-    return DFS_Id(CHILD(cur_root, 1));
+    return Semantic_DFS_Id(CHILD(cur_root, 1));
 }
 
 /* Obtain the var/struct/func name */
-char* DFS_Tag(TreeNode* cur_root){
+char* Semantic_DFS_Tag(TreeNode* cur_root){
     assert(strcmp(cur_root->type, "Tag") == 0);
-    return DFS_Id(CHILD(cur_root, 1));
+    return Semantic_DFS_Id(CHILD(cur_root, 1));
 }
 
 /* Judge whethe two types are structure-equal to each other */
-bool Is_Type_Equal(Type* const type1_id, Type* const type2_id){
+bool Semantic_Is_Type_Equal(Type* const type1_id, Type* const type2_id){
     if (type1_id == NULL || type2_id == NULL)
         return false;
 
@@ -153,7 +71,7 @@ bool Is_Type_Equal(Type* const type1_id, Type* const type2_id){
             return (type1_id->basic == type2_id->basic)?true:false;
         }
         case ARRAY:{
-            if (Is_Type_Equal(type1_id->array.elem, type2_id->array.elem) == false)
+            if (Semantic_Is_Type_Equal(type1_id->array.elem, type2_id->array.elem) == false)
                 return false;
             
             ArraySizeList* type1_id_array = type1_id->array.array_size;
@@ -180,7 +98,7 @@ bool Is_Type_Equal(Type* const type1_id, Type* const type2_id){
             FieldList* type2_id_field = type2_id->structure->fields;
 
             while(type1_id_field != NULL && type2_id_field != NULL){
-                if (Is_Type_Equal(type1_id_field->field_type, type2_id_field->field_type) == false)
+                if (Semantic_Is_Type_Equal(type1_id_field->field_type, type2_id_field->field_type) == false)
                     return false;
                 
                 type1_id_field = type1_id_field->next;
@@ -204,12 +122,12 @@ bool Is_Type_Equal(Type* const type1_id, Type* const type2_id){
     return false;
 }
 
-bool Is_Params_Args_Equal(FuncParamList* const param, FuncArgsList* const args) {
+bool Semantic_Is_Params_Args_Equal(FuncParamList* const param, FuncArgsList* const args) {
     FuncParamList* pa = param;
     FuncArgsList* ar = args;
 
     while(pa!=NULL && ar!=NULL){
-        if (Is_Type_Equal(pa->param_type, ar->args_type) == false)
+        if (Semantic_Is_Type_Equal(pa->param_type, ar->args_type) == false)
             return false;
         pa=pa->next;
         ar=ar->next;
@@ -220,7 +138,7 @@ bool Is_Params_Args_Equal(FuncParamList* const param, FuncArgsList* const args) 
     return true;
 }
 
-FieldList* Get_Field_List(FieldList* head_node, char* field_name) {
+FieldList* Semantic_Get_Field_List(FieldList* head_node, char* field_name) {
     FieldList* pt = head_node;
     while(pt != NULL){
         if (strcmp(pt->field_name, field_name) == 0)
@@ -230,8 +148,8 @@ FieldList* Get_Field_List(FieldList* head_node, char* field_name) {
     return NULL;
 }
 
-Type* Get_Field_Type(Structure* strcuture_type, char* field_name){
-    FieldList* structure_field = Get_Field_List(strcuture_type->fields, field_name);
+Type* Semantic_Get_Field_Type(Structure* strcuture_type, char* field_name){
+    FieldList* structure_field = Semantic_Get_Field_List(strcuture_type->fields, field_name);
     if (structure_field == NULL)
         return NULL;
     
@@ -239,17 +157,17 @@ Type* Get_Field_Type(Structure* strcuture_type, char* field_name){
 }
 
 /* A deepth-first traversal for the Args branch */
-FuncArgsList* DFS_Args(TreeNode* cur_root){
+FuncArgsList* Semantic_DFS_Args(TreeNode* cur_root){
     //Args: Exp COMMA Args|Exp
     assert(strcmp(cur_root->type, "Args") == 0);
     
     FuncArgsList* args_list = malloc(sizeof(FuncArgsList));
-    args_list->args_type = DFS_Expression(CHILD(cur_root, 1));
+    args_list->args_type = Semantic_DFS_Expression(CHILD(cur_root, 1));
     args_list->next = NULL;
     args_list->prev = NULL;
 
     if (CHILD(cur_root, 3) != NULL){
-        args_list->next = DFS_Args(CHILD(cur_root, 3));
+        args_list->next = Semantic_DFS_Args(CHILD(cur_root, 3));
         if (args_list->next != NULL)
             args_list->next->prev = args_list;
     }
@@ -260,13 +178,13 @@ FuncArgsList* DFS_Args(TreeNode* cur_root){
 }
 
 /* A deepth-first traversal for the Exp branch */
-Type* DFS_Expression(TreeNode* cur_root){
+Type* Semantic_DFS_Expression(TreeNode* cur_root){
     assert(strcmp(cur_root->type, "Exp") == 0);
 
     if (CHILD(cur_root, 2) == NULL){
         // Exp: ID|INT|FLOAT
         if (strcmp(CHILD(cur_root, 1)->type, "ID") == 0){
-            char* id_name = DFS_Id(CHILD(cur_root, 1));
+            char* id_name = Semantic_DFS_Id(CHILD(cur_root, 1));
             SymbolRecord* symbol = Find_Var_Func_Symbol(id_name);
 
             if (symbol == NULL){
@@ -276,13 +194,13 @@ Type* DFS_Expression(TreeNode* cur_root){
             return symbol->symbol_type;
         }
         else if (strcmp(CHILD(cur_root, 1)->type, "INT") == 0){
-            DFS_Int(CHILD(cur_root, 1));
+            Semantic_DFS_Int(CHILD(cur_root, 1));
             Type* int_type = NULL;
             Create_Type_Basic(&int_type, "int");
             return int_type;
         }
         else{
-            DFS_Float(CHILD(cur_root, 1));
+            Semantic_DFS_Float(CHILD(cur_root, 1));
             Type* float_type = NULL;
             Create_Type_Basic(&float_type, "float");
             return float_type;
@@ -291,7 +209,7 @@ Type* DFS_Expression(TreeNode* cur_root){
     else if (CHILD(cur_root, 3) == NULL){
         //Exp: MINUS Exp|NOT Exp
         if (strcmp(CHILD(cur_root, 1)->type, "MINUS") == 0){
-            Type* type_exp = DFS_Expression(CHILD(cur_root, 2));
+            Type* type_exp = Semantic_DFS_Expression(CHILD(cur_root, 2));
 
             if (type_exp == NULL)
                 return NULL;
@@ -303,7 +221,7 @@ Type* DFS_Expression(TreeNode* cur_root){
             }
         }
         else{
-            Type* type_exp = DFS_Expression(CHILD(cur_root, 2));
+            Type* type_exp = Semantic_DFS_Expression(CHILD(cur_root, 2));
             if (type_exp == NULL)
                 return NULL;
             if (type_exp->kind == BASIC && type_exp->basic == TYPE_INT)
@@ -322,10 +240,10 @@ Type* DFS_Expression(TreeNode* cur_root){
          *     |Exp OR Exp|Exp DOT ID 
          */
         if (strcmp(CHILD(cur_root, 2)->type, "Exp") == 0)
-            return DFS_Expression(CHILD(cur_root, 2));
+            return Semantic_DFS_Expression(CHILD(cur_root, 2));
         else if (strcmp(CHILD(cur_root, 2)->type, "ASSIGNOP") == 0){
-            Type* left_exp_type = DFS_Expression(CHILD(cur_root, 1));
-            Type* right_exp_type = DFS_Expression(CHILD(cur_root, 3));
+            Type* left_exp_type = Semantic_DFS_Expression(CHILD(cur_root, 1));
+            Type* right_exp_type = Semantic_DFS_Expression(CHILD(cur_root, 3));
 
             if (left_exp_type == NULL || right_exp_type == NULL)
                 return NULL;
@@ -351,14 +269,14 @@ Type* DFS_Expression(TreeNode* cur_root){
                 Report_Errors(6, CHILD(cur_root, 1));
                 return NULL;
             }
-            if (Is_Type_Equal(left_exp_type, right_exp_type) == false){
+            if (Semantic_Is_Type_Equal(left_exp_type, right_exp_type) == false){
                 Report_Errors(5, cur_root);
                 return NULL;
             }
             return left_exp_type;
         }
         else if (strcmp(CHILD(cur_root, 2)->type, "DOT") == 0){
-            Type* exp_type = DFS_Expression(CHILD(cur_root, 1));
+            Type* exp_type = Semantic_DFS_Expression(CHILD(cur_root, 1));
 
             if (exp_type == NULL)
                 return NULL;
@@ -368,7 +286,7 @@ Type* DFS_Expression(TreeNode* cur_root){
                 return NULL;
             }
 
-            Type* field_type = Get_Field_Type(exp_type->structure, DFS_Id(CHILD(cur_root, 3)));
+            Type* field_type = Semantic_Get_Field_Type(exp_type->structure, Semantic_DFS_Id(CHILD(cur_root, 3)));
             if (field_type != NULL)
                 return field_type;
             else{
@@ -377,13 +295,13 @@ Type* DFS_Expression(TreeNode* cur_root){
             }
         }
         else{
-            Type* left_exp_type = DFS_Expression(CHILD(cur_root, 1));
-            Type* right_exp_type = DFS_Expression(CHILD(cur_root, 3));
+            Type* left_exp_type = Semantic_DFS_Expression(CHILD(cur_root, 1));
+            Type* right_exp_type = Semantic_DFS_Expression(CHILD(cur_root, 3));
             
             if (left_exp_type == NULL || right_exp_type == NULL)
                 return NULL;
             
-            if (Is_Type_Equal(left_exp_type, right_exp_type) == false){
+            if (Semantic_Is_Type_Equal(left_exp_type, right_exp_type) == false){
                 Report_Errors(7, cur_root);
                 return NULL;
             }
@@ -409,7 +327,7 @@ Type* DFS_Expression(TreeNode* cur_root){
     }
     else if (strcmp(CHILD(cur_root, 1)->type, "ID") == 0){
         // Exp: ID LP Args RP|ID LP RP
-        SymbolRecord* func_symbol = Find_Var_Func_Symbol(DFS_Id(CHILD(cur_root, 1)));
+        SymbolRecord* func_symbol = Find_Var_Func_Symbol(Semantic_DFS_Id(CHILD(cur_root, 1)));
 
         if (func_symbol == NULL){
             Report_Errors(2, CHILD(cur_root, 1));
@@ -423,17 +341,17 @@ Type* DFS_Expression(TreeNode* cur_root){
 
         FuncArgsList* args_list = NULL;
         if (strcmp(CHILD(cur_root, 3)->type, "Args") == 0)
-            args_list = DFS_Args(CHILD(cur_root, 3));
+            args_list = Semantic_DFS_Args(CHILD(cur_root, 3));
         
         FuncParamList* param_list = func_symbol->symbol_type->func.param_list;
-        if (Is_Params_Args_Equal(param_list, args_list) == false)
+        if (Semantic_Is_Params_Args_Equal(param_list, args_list) == false)
             Report_Errors(9, CHILD(cur_root, 3));
         
         return func_symbol->symbol_type->func.rtn;
     }
     else if (strcmp(CHILD(cur_root, 1)->type, "Exp") == 0){
         // Exp: Exp LB Exp RB
-        Type* left_exp_type = DFS_Expression(CHILD(cur_root, 1));
+        Type* left_exp_type = Semantic_DFS_Expression(CHILD(cur_root, 1));
 
         Type* pt = NULL;
         if (left_exp_type == NULL || left_exp_type->kind != ARRAY)
@@ -450,7 +368,7 @@ Type* DFS_Expression(TreeNode* cur_root){
             }
         }
 
-        Type* right_exp_type = DFS_Expression(CHILD(cur_root, 3));
+        Type* right_exp_type = Semantic_DFS_Expression(CHILD(cur_root, 3));
         if (right_exp_type == NULL || right_exp_type->kind != BASIC || right_exp_type->basic != TYPE_INT)
             Report_Errors(12, CHILD(cur_root, 3));
 
@@ -462,12 +380,12 @@ Type* DFS_Expression(TreeNode* cur_root){
 }
 
 /* Deepth-first traversal for searching the VarDec branch */
-Type* DFS_Var_Declared(TreeNode* cur_root, char **symbol_id, Type* type_id){
+Type* Semantic_DFS_Var_Declared(TreeNode* cur_root, char **symbol_id, Type* type_id){
     assert(strcmp(cur_root->type, "VarDec") == 0);
 
     if (strcmp(CHILD(cur_root, 1)->type, "ID") == 0){
         // VarDec: ID
-        *symbol_id = DFS_Id(CHILD(cur_root, 1));
+        *symbol_id = Semantic_DFS_Id(CHILD(cur_root, 1));
         return type_id;
     }
     
@@ -489,7 +407,7 @@ Type* DFS_Var_Declared(TreeNode* cur_root, char **symbol_id, Type* type_id){
         tree_node = CHILD(tree_node, 1);
     }
 
-    *symbol_id = DFS_Id(CHILD(tree_node, 1));
+    *symbol_id = Semantic_DFS_Id(CHILD(tree_node, 1));
     Type* array_type = malloc(sizeof(Type));
     array_type->kind =ARRAY;
     array_type->array.array_size = head_node;
@@ -499,27 +417,27 @@ Type* DFS_Var_Declared(TreeNode* cur_root, char **symbol_id, Type* type_id){
 }
 
 /* Deepth-first traversal for searching the Dec branch */
-FieldList* DFS_Declared(TreeNode* cur_root, Type* type_id){
+FieldList* Semantic_DFS_Declared(TreeNode* cur_root, Type* type_id){
     assert(strcmp(cur_root->type, "Dec") == 0);
 
     FieldList* pt = malloc(sizeof(FieldList));
-    pt->field_type = DFS_Var_Declared(CHILD(cur_root, 1), &(pt->field_name), type_id);
+    pt->field_type = Semantic_DFS_Var_Declared(CHILD(cur_root, 1), &(pt->field_name), type_id);
     pt->next = NULL;
     pt->prev = NULL;
 
-    if (func_ret_type == NULL){
+    if (func_ret_type4semantic == NULL){
         // Now in structure
         if (CHILD(cur_root, 3) != NULL)
             Report_Errors(15, cur_root);
     } 
     else if (CHILD(cur_root, 3) != NULL){
-        Type* exp_type_id = DFS_Expression(CHILD(cur_root, 3));
+        Type* exp_type_id = Semantic_DFS_Expression(CHILD(cur_root, 3));
 
-        if (Is_Type_Equal(exp_type_id, pt->field_type) == false)
+        if (Semantic_Is_Type_Equal(exp_type_id, pt->field_type) == false)
             Report_Errors(5, cur_root);
     }
     if (Insert_Var_Symbol(pt->field_name, pt->field_type) == false){
-        if (func_ret_type == NULL)
+        if (func_ret_type4semantic == NULL)
             Report_Errors(15, cur_root->child); 
         else
             Report_Errors(3, cur_root->child);
@@ -531,18 +449,18 @@ FieldList* DFS_Declared(TreeNode* cur_root, Type* type_id){
 }
 
 /* Deepth-first traversal for searching the DecList branch */
-FieldList* DFS_Declared_List(TreeNode* cur_root, Type* type_id){
+FieldList* Semantic_DFS_Declared_List(TreeNode* cur_root, Type* type_id){
     assert(strcmp(cur_root->type, "DecList") == 0);
 
-    FieldList* pt = DFS_Declared(CHILD(cur_root, 1), type_id);
+    FieldList* pt = Semantic_DFS_Declared(CHILD(cur_root, 1), type_id);
     if (CHILD(cur_root, 3) != NULL) {
         if (pt != NULL){
-            pt->next = DFS_Declared_List(CHILD(cur_root, 3), type_id);
+            pt->next = Semantic_DFS_Declared_List(CHILD(cur_root, 3), type_id);
             if(pt->next != NULL)
                 pt->next->prev = pt;
         }
         else
-            pt = DFS_Declared_List(CHILD(cur_root, 3), type_id);   
+            pt = Semantic_DFS_Declared_List(CHILD(cur_root, 3), type_id);   
     }
     return pt;
 }
@@ -550,33 +468,33 @@ FieldList* DFS_Declared_List(TreeNode* cur_root, Type* type_id){
 /* Obtain the field members' information in a given structure 
  * Deepth-first traversal for searching the Def branch 
  */
-FieldList* DFS_Defined(TreeNode* cur_root){
+FieldList* Semantic_DFS_Defined(TreeNode* cur_root){
     assert(strcmp(cur_root->type, "Def") == 0);
 
-    Type* type_id = DFS_Specifier(CHILD(cur_root, 1));
+    Type* type_id = Semantic_DFS_Specifier(CHILD(cur_root, 1));
     if (type_id == NULL) 
         return NULL;
 
-    return DFS_Declared_List(CHILD(cur_root, 2), type_id);
+    return Semantic_DFS_Declared_List(CHILD(cur_root, 2), type_id);
 }
 
 /* Obtain the field members' information in a given structure 
  * Deepth-first traversal for searching the DefList branch 
  */
-FieldList* DFS_Defined_List(TreeNode* cur_root){
+FieldList* Semantic_DFS_Defined_List(TreeNode* cur_root){
     assert(strcmp(cur_root->type, "DefList") == 0);
 
-    FieldList* pt = DFS_Defined(CHILD(cur_root, 1));
+    FieldList* pt = Semantic_DFS_Defined(CHILD(cur_root, 1));
     if (CHILD(cur_root, 2) != NULL) {
         if (pt == NULL) {
-            pt = DFS_Defined_List(CHILD(cur_root, 2));
+            pt = Semantic_DFS_Defined_List(CHILD(cur_root, 2));
         } 
         else{
             FieldList* prev_node = pt;
             while(prev_node->next != NULL)
                 prev_node = prev_node->next;
 
-            prev_node->next = DFS_Defined_List(CHILD(cur_root, 2));
+            prev_node->next = Semantic_DFS_Defined_List(CHILD(cur_root, 2));
             if (prev_node->next != NULL)
                 prev_node->next->prev = prev_node;
         }
@@ -585,7 +503,7 @@ FieldList* DFS_Defined_List(TreeNode* cur_root){
 }
 
 /* Deepth-first traversal for searching the StructSpecifier branch */
-Structure* DFS_Structure_Specifier(TreeNode* cur_root){
+Structure* Semantic_DFS_Structure_Specifier(TreeNode* cur_root){
     assert(strcmp(cur_root->type, "StructSpecifier") == 0);
 
     Structure* structure;
@@ -595,13 +513,13 @@ Structure* DFS_Structure_Specifier(TreeNode* cur_root){
 
         if (CHILD(cur_root, 4) != NULL && strcmp(CHILD(cur_root, 4)->type, "DefList") == 0){
             Push_Scope();
-            structure->fields = DFS_Defined_List(CHILD(cur_root, 4));
+            structure->fields = Semantic_DFS_Defined_List(CHILD(cur_root, 4));
             Pop_Scope();
         }
         else
             structure->fields = NULL;
 
-        char* structure_name = DFS_Opt_Tag(CHILD(cur_root, 2));
+        char* structure_name = Semantic_DFS_Opt_Tag(CHILD(cur_root, 2));
         /* If find the same structure name in structure hashtable */
         if (Insert_Structure_Symbol(structure_name, structure) == false)
             Report_Errors(16, CHILD(cur_root, 2));
@@ -612,7 +530,7 @@ Structure* DFS_Structure_Specifier(TreeNode* cur_root){
 
         if (CHILD(cur_root, 3) != NULL && strcmp(CHILD(cur_root, 4)->type, "DefList") == 0){
             Push_Scope();
-            structure->fields = DFS_Defined_List(CHILD(cur_root, 3));
+            structure->fields = Semantic_DFS_Defined_List(CHILD(cur_root, 3));
             Pop_Scope();
         }
         else
@@ -620,7 +538,7 @@ Structure* DFS_Structure_Specifier(TreeNode* cur_root){
     }
     else if (strcmp(CHILD(cur_root, 2)->type, "Tag") == 0){
         // StructSpecifier: STRUCT Tag
-        char* structure_name = DFS_Tag(CHILD(cur_root, 2));
+        char* structure_name = Semantic_DFS_Tag(CHILD(cur_root, 2));
 
         StructureSymbol* structure_symbol = Find_Structure_Symbol(structure_name);
         if (structure_symbol != NULL)
@@ -635,7 +553,7 @@ Structure* DFS_Structure_Specifier(TreeNode* cur_root){
 }
 
 /* A deepth-first traversal method for searching the Specifier branch */
-Type* DFS_Specifier(TreeNode* cur_root){
+Type* Semantic_DFS_Specifier(TreeNode* cur_root){
     assert(strcmp(cur_root->type, "Specifier") == 0);
 
     Type* pt = NULL;
@@ -651,7 +569,7 @@ Type* DFS_Specifier(TreeNode* cur_root){
         // Specifier: StructSpecifier
         pt = malloc(sizeof(Type));
         pt->kind = STRUCTURE;
-        pt->structure = DFS_Structure_Specifier(cur_root->child);
+        pt->structure = Semantic_DFS_Structure_Specifier(cur_root->child);
 
         if (pt->structure == NULL)
             return NULL;
@@ -660,25 +578,25 @@ Type* DFS_Specifier(TreeNode* cur_root){
 }
 
 /* A deepth-first traversal method for searching the ExtDecList branch */
-void DFS_Extern_Declared_List(TreeNode* cur_root, Type* type_id){
+void Semantic_DFS_Extern_Declared_List(TreeNode* cur_root, Type* type_id){
     assert(strcmp(cur_root->type, "ExtDecList") == 0);
 
     char* symbol_id;
-    Type* var_type = DFS_Var_Declared(CHILD(cur_root, 1), &symbol_id, type_id);
+    Type* var_type = Semantic_DFS_Var_Declared(CHILD(cur_root, 1), &symbol_id, type_id);
     if (Insert_Var_Symbol(symbol_id, var_type) == false) 
         Report_Errors(3, cur_root);
     
     if (CHILD(cur_root, 3) != NULL)
-        DFS_Extern_Declared_List(CHILD(cur_root, 3), type_id);
+        Semantic_DFS_Extern_Declared_List(CHILD(cur_root, 3), type_id);
 }
 
 /* Judge whether two parameter lists are as same as each other */
-bool Is_Params_Equal(FuncParamList* const new, FuncParamList* const old){
+bool Semantic_Is_Params_Equal(FuncParamList* const new, FuncParamList* const old){
     FuncParamList* tmp_new = new;
     FuncParamList* tmp_old = old;
 
     while(tmp_old != NULL & tmp_new != NULL){
-        if (Is_Type_Equal(tmp_old->param_type, tmp_new->param_type) == false)
+        if (Semantic_Is_Type_Equal(tmp_old->param_type, tmp_new->param_type) == false)
             return false;
         
         tmp_new = tmp_new->next;
@@ -691,30 +609,30 @@ bool Is_Params_Equal(FuncParamList* const new, FuncParamList* const old){
 }
 
 /* A deepth-first traversal method for searching the ParamDec branch */
-Type* DFS_Param_Declared(TreeNode* cur_root, char **symbol_id){
+Type* Semantic_DFS_Param_Declared(TreeNode* cur_root, char **symbol_id){
     assert(strcmp(cur_root->type, "ParamDec") == 0);
 
-    Type* param_type = DFS_Specifier(CHILD(cur_root, 1));
+    Type* param_type = Semantic_DFS_Specifier(CHILD(cur_root, 1));
 
     if (param_type == NULL)
         return NULL;
     
     if (CHILD(cur_root, 2) != NULL)
-        param_type = DFS_Var_Declared(CHILD(cur_root, 2), symbol_id, param_type);
+        param_type = Semantic_DFS_Var_Declared(CHILD(cur_root, 2), symbol_id, param_type);
     return param_type;
 }
 
 /* A deepth-first traversal method for searching the VarList branch */
-FuncParamList* DFS_Var_List(TreeNode* cur_root){
+FuncParamList* Semantic_DFS_Var_List(TreeNode* cur_root){
     assert(strcmp(cur_root->type, "VarList") == 0);
 
     FuncParamList* pt = malloc(sizeof(FuncParamList));
-    pt->param_type = DFS_Param_Declared(CHILD(cur_root, 1), &(pt->param_name));
+    pt->param_type = Semantic_DFS_Param_Declared(CHILD(cur_root, 1), &(pt->param_name));
     pt->next = NULL;
     pt->prev = NULL;
 
     if (CHILD(cur_root, 3) != NULL){
-        pt->next = DFS_Var_List(CHILD(cur_root, 3));
+        pt->next = Semantic_DFS_Var_List(CHILD(cur_root, 3));
         if (pt->next != NULL)
             pt->next->prev = NULL;
     }
@@ -730,7 +648,7 @@ FuncParamList* DFS_Var_List(TreeNode* cur_root){
 }
 
 /* A deepth-first traversal method for searching the FunDec branch */
-void DFS_Func_Declared(TreeNode* cur_root, Type* rtn, bool declared_only){
+void Semantic_DFS_Func_Declared(TreeNode* cur_root, Type* rtn, bool declared_only){
     assert(strcmp(cur_root->type, "FunDec") == 0);
 
     Type* func_type = malloc(sizeof(Type));
@@ -739,10 +657,10 @@ void DFS_Func_Declared(TreeNode* cur_root, Type* rtn, bool declared_only){
     func_type->func.param_list = NULL;
 
     // Obtain the ID of the function
-    char* func_id = DFS_Id(CHILD(cur_root, 1));
+    char* func_id = Semantic_DFS_Id(CHILD(cur_root, 1));
 
     if (strcmp(CHILD(cur_root, 3)->type, "VarList") == 0){
-        func_type->func.param_list = DFS_Var_List(CHILD(cur_root, 3));
+        func_type->func.param_list = Semantic_DFS_Var_List(CHILD(cur_root, 3));
 
         FuncParamList* pt = func_type->func.param_list;
         while(pt != NULL){
@@ -759,7 +677,7 @@ void DFS_Func_Declared(TreeNode* cur_root, Type* rtn, bool declared_only){
                 FuncParamList* pt_new = func_type->func.param_list;
                 FuncParamList* pt_declared = var_func_symbol->symbol_type->func.param_list;
 
-                if (Is_Params_Equal(pt_new, pt_declared) == false)
+                if (Semantic_Is_Params_Equal(pt_new, pt_declared) == false)
                     Report_Errors(19, cur_root);
             }
             else
@@ -776,7 +694,7 @@ void DFS_Func_Declared(TreeNode* cur_root, Type* rtn, bool declared_only){
             FuncParamList* pt_declared = var_func_symbol->symbol_type->func.param_list;
             FuncParamList* pt_new = func_type->func.param_list;
 
-            if (Is_Params_Equal(pt_new, pt_declared) == false)
+            if (Semantic_Is_Params_Equal(pt_new, pt_declared) == false)
                 Report_Errors(19, cur_root);
             else
                 Delete_Var_Func_Symbol(func_id);
@@ -787,32 +705,32 @@ void DFS_Func_Declared(TreeNode* cur_root, Type* rtn, bool declared_only){
 }
 
 /*  A deepth-first traversal method for searching the CompSt branch */
-void DFS_CompSt(TreeNode* cur_root){
+void Semantic_DFS_CompSt(TreeNode* cur_root){
     assert(strcmp(cur_root->type, "CompSt") == 0);
 
     if (CHILD(cur_root, 2) != NULL && strcmp(CHILD(cur_root, 2)->type, "DefList") == 0)
-        DFS_Defined_List(CHILD(cur_root, 2));
+        Semantic_DFS_Defined_List(CHILD(cur_root, 2));
 
     if (CHILD(cur_root, 3) != NULL && strcmp(CHILD(cur_root, 3)->type, "StmtList") == 0)
-        DFS(CHILD(cur_root, 3));
+        Semantic_DFS(CHILD(cur_root, 3));
     else if (CHILD(cur_root, 2) != NULL && strcmp(CHILD(cur_root, 2)->type, "StmtList") == 0)
-        DFS(CHILD(cur_root, 2));
+        Semantic_DFS(CHILD(cur_root, 2));
 }
 
 /* A deepth-first traversal method for searching the Stmt branch */
-void DFS_Stmt(TreeNode* cur_root){
+void Semantic_DFS_Stmt(TreeNode* cur_root){
     assert(strcmp(cur_root->type, "Stmt") == 0);
 
     if (CHILD(cur_root, 1) != NULL && strcmp(CHILD(cur_root, 1)->type, "CompSt") == 0){
         Push_Scope();
-        DFS_CompSt(CHILD(cur_root, 1));
+        Semantic_DFS_CompSt(CHILD(cur_root, 1));
         Pop_Scope();
     }
     else if (CHILD(cur_root, 1) != NULL && strcmp(CHILD(cur_root, 1)->type, "RETURN") == 0){
         // Stmt: RETURN Exp SEMI
-        Type* rtn_type = DFS_Expression(CHILD(cur_root, 2));
+        Type* rtn_type = Semantic_DFS_Expression(CHILD(cur_root, 2));
 
-        if (Is_Type_Equal(rtn_type, func_ret_type) == false){
+        if (Semantic_Is_Type_Equal(rtn_type, func_ret_type4semantic) == false){
             Report_Errors(8, CHILD(cur_root, 2));
             return;
         }
@@ -820,21 +738,21 @@ void DFS_Stmt(TreeNode* cur_root){
     else{  
         TreeNode* pt = CHILD(cur_root, 1);
         for(;pt!=NULL;pt=pt->sibling)
-            DFS(pt);
+            Semantic_DFS(pt);
     }
 }
 
 /* A deepth-first traversal method for searching the ExtDef branch */
-void DFS_Extern_Defined(TreeNode* cur_root){
+void Semantic_DFS_Extern_Defined(TreeNode* cur_root){
     assert(strcmp(cur_root->type, "ExtDef") == 0);
 
-    Type* type_id = DFS_Specifier(CHILD(cur_root, 1));
+    Type* type_id = Semantic_DFS_Specifier(CHILD(cur_root, 1));
     if (type_id == NULL) 
         return;
 
     if (strcmp(CHILD(cur_root, 2)->type, "ExtDecList") == 0){
         // ExtDef: Specifier ExtDecList SEMI
-        DFS_Extern_Declared_List(CHILD(cur_root, 2), type_id);
+        Semantic_DFS_Extern_Declared_List(CHILD(cur_root, 2), type_id);
     }
     else if (strcmp(CHILD(cur_root, 2)->type, "SEMI") == 0){
         // ExtDef: Specifier SEMI
@@ -843,21 +761,21 @@ void DFS_Extern_Defined(TreeNode* cur_root){
     else if (strcmp(CHILD(cur_root, 2)->type, "FunDec") == 0){
         // ExtDef: Specifier FunDec CompSt
         // ExtDef: Specifier FunDec SEMI
-        func_ret_type = type_id;
+        func_ret_type4semantic = type_id;
         
         /* Enter into a deeper scope */
         Push_Scope();
         if (strcmp(CHILD(cur_root, 3)->type, "CompSt") == 0){
             /* If the function is declared and implemented */
-            DFS_Func_Declared(CHILD(cur_root, 2), type_id, false);
-            DFS_CompSt(CHILD(cur_root, 3));
+            Semantic_DFS_Func_Declared(CHILD(cur_root, 2), type_id, false);
+            Semantic_DFS_CompSt(CHILD(cur_root, 3));
         }
         else{
             /* If the function is declared only */
-            DFS_Func_Declared(CHILD(cur_root, 2), type_id, true);
+            Semantic_DFS_Func_Declared(CHILD(cur_root, 2), type_id, true);
         }
         Pop_Scope();
         
-        func_ret_type = NULL;
+        func_ret_type4semantic = NULL;
     }
 }
