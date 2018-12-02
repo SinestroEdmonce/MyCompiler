@@ -31,7 +31,7 @@ int main(int argc, char** argv){
         /* If no errors, traverse the whole tree */
         if(syn_error==false && lex_error==false){
             //Preorder_Traversal(root, 0);
-            DFS(root);
+            Semantic_DFS(root);
             Check_Declared_Func();
         }      
 
