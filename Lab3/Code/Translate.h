@@ -9,6 +9,8 @@
 #include "SyntaxTree.h"
 #include "ErrorReport.h"
 #include "SymbolTable.h"
+#include "IRgeneration.h"
+
 
 #define CHILD(tree_node, num) \
     ((num == 1)?tree_node->child:Get_Nth_Child(tree_node, num))

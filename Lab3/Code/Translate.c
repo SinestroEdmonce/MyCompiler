@@ -640,10 +640,7 @@ FuncParamList* Translate_DFS_Var_List(TreeNode* cur_root){
     if (CHILD(cur_root, 3) != NULL){
         pt->next = Translate_DFS_Var_List(CHILD(cur_root, 3));
         if (pt->next != NULL)
-            pt->next->prev = NULL;
-    }
-    if (pt->param_type == NULL){
-        free(pt);
+            pt->next->prev = pt;
     }
     if (pt->param_type == NULL) {
         FuncParamList* rtn = pt->next;
@@ -668,34 +665,52 @@ void Translate_DFS_Func_Declared(TreeNode* cur_root, Type* rtn, bool declared_on
     if (strcmp(CHILD(cur_root, 3)->type, "VarList") == 0){
         func_type->func.param_list = Translate_DFS_Var_List(CHILD(cur_root, 3));
 
-        FuncParamList* pt = func_type->func.param_list;
-        while(pt != NULL){
-            Insert_Var_Symbol(pt->param_name, pt->param_type);
-            pt = pt->next;
-        }
+        // FuncParamList* pt = func_type->func.param_list;
+        // while(pt != NULL){
+        //     Insert_Var_Symbol(pt->param_name, pt->param_type);
+        //     pt = pt->next;
+        // }
     }
     if (declared_only == true){
         Set_Scope_Declared_Only();
 
         SymbolRecord* var_func_symbol = Find_Var_Func_Symbol(func_id);
         if (var_func_symbol != NULL){
-            if (var_func_symbol->symbol_type->kind == FUNCTION){
-                FuncParamList* pt_new = func_type->func.param_list;
-                FuncParamList* pt_declared = var_func_symbol->symbol_type->func.param_list;
+            // if (var_func_symbol->symbol_type->kind == FUNCTION){
+            //     FuncParamList* pt_new = func_type->func.param_list;
+            //     FuncParamList* pt_declared = var_func_symbol->symbol_type->func.param_list;
 
-                if (Translate_Is_Params_Equal(pt_new, pt_declared) == false){
-                    // Report_Errors(19, cur_root);
-                }
-            }
-            else{
-                // Report_Errors(4, cur_root);
-            }
+            //     if (Translate_Is_Params_Equal(pt_new, pt_declared) == false){
+            //         // Report_Errors(19, cur_root);
+            //     }
+            // }
+            // else{
+            //     // Report_Errors(4, cur_root);
+            // }
         }
         else
             Insert_Func_Symbol(func_id, func_type, cur_root);
         Reset_Scope();
     }
     else{
+        IROperand* operand_func = Gen_Operand(OP_FUNCTION, OP_MDF_NONE, -1, func_id);
+        Gen_1_Operands_Code(IR_FUNCTION, operand_func);
+
+        if (strcmp(CHILD(cur_root, 3)->type, "VarList") == 0){
+            FuncParamList* pt = func_type->func.param_list;
+
+            while(pt!=NULL){
+                Insert_Var_Symbol(pt->param_name, pt->param_type);
+                SymbolRecord* var_func_symbol = Find_Var_Func_Symbol(pt->param_name);
+                IROperand* operand_param = var_func_symbol->operand;
+                Gen_1_Operands_Code(IR_PARAM, operand_param);
+
+                if (var_func_symbol->symbol_type->kind != BASIC)
+                    var_func_symbol->operand = Modify_Operator(operand_param, OP_MDF_DEREFERENCE);
+                pt = pt->next;
+            }
+        }
+
         // If the function has been declared before, then remove the old declaration and add the new definition
         SymbolRecord* var_func_symbol = Find_Var_Func_Symbol(func_id);
         if (var_func_symbol != NULL && var_func_symbol->scope_level == DECLARED_ONLY){
