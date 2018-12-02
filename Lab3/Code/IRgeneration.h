@@ -159,4 +159,16 @@ void Print_IR_Code_List(FILE *fp);
 /* Delete all IRCode* node in IR_list */
 void Delete_IR_List();
 
+/* Add new intermediate representation code to IR_list */
+void Gen_3_Operands_Code(IR_TYPE ir_type, IROperand* dst, IROperand* src1, IROperand* src2, RELOP_TYPE relop);
+
+/* Add new intermediate representation code to IR_list */
+void Gen_2_Operands_Code(IR_TYPE ir_type, IROperand* dst, IROperand* src, int size);
+
+/* Add new intermediate representation code to IR_list */
+void Gen_1_Operands_Code(IR_TYPE ir_type, IROperand* src);
+
+/* Generate new immediate operand */
+IROperand* Gen_Imme_Op(int value_int, float value_float, bool flag);
+
 #endif

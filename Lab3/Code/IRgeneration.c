@@ -401,3 +401,85 @@ void Delete_IR_List(){
     }
     ir_list_head = ir_list_tail = NULL;
 }
+
+/* Add new intermediate representation code to IR_list */
+void Gen_3_Operands_Code(IR_TYPE ir_type, IROperand* dst, IROperand* src1, IROperand* src2, RELOP_TYPE relop){
+    IRCode* new_ir_code = malloc(sizeof(IRCode));
+    new_ir_code->kind = ir_type;
+    new_ir_code->dst = dst;
+    new_ir_code->src1 = src1;
+    new_ir_code->src2 = src2;
+
+    switch(ir_type){
+        case IR_ADD:case IR_SUB:case IR_MUL:case IR_DIV:{
+            new_ir_code->none_flag= false;
+            break;
+        }
+        case IR_IF_GOTO:{
+            new_ir_code->relop = relop;
+            break;
+        }
+        default: assert(false);
+    }
+
+    if (new_ir_code != NULL)
+        Add_IR_Code(new_ir_code);
+    else
+        assert(false);
+}
+
+/* Add new intermediate representation code to IR_list */
+void Gen_2_Operands_Code(IR_TYPE ir_type, IROperand* dst, IROperand* src, int size){
+    IRCode* new_ir_code = malloc(sizeof(IRCode));
+    new_ir_code->kind = ir_type;
+
+    switch(ir_type){
+        case IR_DEC:{
+            new_ir_code->declared_size = size;
+            new_ir_code->src = src;
+        }
+        case IR_ASSIGN:{
+            new_ir_code->dst = dst;
+            new_ir_code->src = src;
+            break;
+        }
+        case IR_CALL:{
+            new_ir_code->rtn = dst;
+            new_ir_code->func = src;
+            break;
+        }
+        default: assert(false);
+    }
+
+    if (new_ir_code != NULL)
+        Add_IR_Code(new_ir_code);
+    else
+        assert(false);
+}
+
+/* Add new intermediate representation code to IR_list */
+void Gen_1_Operands_Code(IR_TYPE ir_type, IROperand* src){
+    IRCode* new_ir_code = malloc(sizeof(IRCode));
+    new_ir_code->kind = ir_type;
+    new_ir_code->src = src;
+    new_ir_code->none_flag = false;
+    
+    if (new_ir_code != NULL)
+        Add_IR_Code(new_ir_code);
+    else
+        assert(false);
+}
+
+/* Generate new immediate operand */
+IROperand* Gen_Imme_Op(int value_int, float value_float, bool flag){
+    IROperand* new_imme = malloc(sizeof(IROperand));
+    new_imme->kind = OP_IMMEDIATE;
+    new_imme->modifier = OP_MDF_NONE;
+
+    if (flag=true)
+        new_imme->value_int = value_int;
+    else
+        new_imme->value_float = value_float;
+
+    return new_imme;
+}
