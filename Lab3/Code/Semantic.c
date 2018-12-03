@@ -5,6 +5,7 @@ static Type* func_ret_type4semantic;
 
 /* A method for semantic analysis */
 void Semantic_Analysis(){
+    Initialize_READ_WRITE();
     Semantic_DFS(root);
 }
 
@@ -436,7 +437,7 @@ FieldList* Semantic_DFS_Declared(TreeNode* cur_root, Type* type_id){
         if (Semantic_Is_Type_Equal(exp_type_id, pt->field_type) == false)
             Report_Errors(5, cur_root);
     }
-    if (Insert_Var_Symbol(pt->field_name, pt->field_type) == false){
+    if (Insert_Var_Symbol(pt->field_name, pt->field_type, false) == false){
         if (func_ret_type4semantic == NULL)
             Report_Errors(15, cur_root->child); 
         else
@@ -583,7 +584,7 @@ void Semantic_DFS_Extern_Declared_List(TreeNode* cur_root, Type* type_id){
 
     char* symbol_id;
     Type* var_type = Semantic_DFS_Var_Declared(CHILD(cur_root, 1), &symbol_id, type_id);
-    if (Insert_Var_Symbol(symbol_id, var_type) == false) 
+    if (Insert_Var_Symbol(symbol_id, var_type, false) == false) 
         Report_Errors(3, cur_root);
     
     if (CHILD(cur_root, 3) != NULL)
@@ -661,7 +662,7 @@ void Semantic_DFS_Func_Declared(TreeNode* cur_root, Type* rtn, bool declared_onl
 
         FuncParamList* pt = func_type->func.param_list;
         while(pt != NULL){
-            Insert_Var_Symbol(pt->param_name, pt->param_type);
+            Insert_Var_Symbol(pt->param_name, pt->param_type, false);
             pt = pt->next;
         }
     }
@@ -681,7 +682,7 @@ void Semantic_DFS_Func_Declared(TreeNode* cur_root, Type* rtn, bool declared_onl
                 Report_Errors(4, cur_root);
         }
         else
-            Insert_Func_Symbol(func_id, func_type, cur_root);
+            Insert_Func_Symbol(func_id, func_type, cur_root, false);
         Reset_Scope();
     }
     else{
@@ -696,7 +697,7 @@ void Semantic_DFS_Func_Declared(TreeNode* cur_root, Type* rtn, bool declared_onl
             else
                 Delete_Var_Func_Symbol(func_id);
         }
-        if (Insert_Func_Symbol(func_id, func_type, cur_root) == false)
+        if (Insert_Func_Symbol(func_id, func_type, cur_root, false) == false)
             Report_Errors(4, CHILD(cur_root, 1));
     }
 }
