@@ -9,7 +9,6 @@
 #include "SyntaxTree.h"
 #include "ErrorReport.h"
 #include "SymbolTable.h"
-#include "IRgeneration.h"
 
 
 #define CHILD(tree_node, num) \

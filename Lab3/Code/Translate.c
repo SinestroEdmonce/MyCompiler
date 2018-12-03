@@ -1,10 +1,11 @@
 #include "Translate.h"
 
 /* Record the type of return value of a given function */
-static Type* func_ret_type4translate;
+Type* func_ret_type4translate;
 
 /* A method for semantic analysis */
 void Translate_Analysis(){
+    Initialize_READ_WRITE();
     Translate_DFS(root);
 }
 
@@ -344,8 +345,10 @@ Type* Translate_DFS_Expression(TreeNode* cur_root){
             args_list = Translate_DFS_Args(CHILD(cur_root, 3));
         
         FuncParamList* param_list = func_symbol->symbol_type->func.param_list;
-        if (Translate_Is_Params_Args_Equal(param_list, args_list) == false)
+        if (Translate_Is_Params_Args_Equal(param_list, args_list) == false){
             // Report_Errors(9, CHILD(cur_root, 3));
+        }
+            
         
         return func_symbol->symbol_type->func.rtn;
     }
@@ -370,12 +373,12 @@ Type* Translate_DFS_Expression(TreeNode* cur_root){
         }
 
         Type* right_exp_type = Translate_DFS_Expression(CHILD(cur_root, 3));
-        if (right_exp_type == NULL || right_exp_type->kind != BASIC || right_exp_type->basic != TYPE_INT)
+        if (right_exp_type == NULL || right_exp_type->kind != BASIC || right_exp_type->basic != TYPE_INT){
             // Report_Errors(12, CHILD(cur_root, 3));
-
+        }
         return pt;   
     }
-    printf("error\n");
+
     assert(false);
     return NULL;
 }
@@ -439,7 +442,7 @@ FieldList* Translate_DFS_Declared(TreeNode* cur_root, Type* type_id){
             // Report_Errors(5, cur_root);
         }
     }
-    if (Insert_Var_Symbol(pt->field_name, pt->field_type) == false){
+    if (Insert_Var_Symbol(pt->field_name, pt->field_type, true) == false){
         if (func_ret_type4translate == NULL){
             // Report_Errors(15, cur_root->child);
         } 
@@ -589,7 +592,7 @@ void Translate_DFS_Extern_Declared_List(TreeNode* cur_root, Type* type_id){
 
     char* symbol_id;
     Type* var_type = Translate_DFS_Var_Declared(CHILD(cur_root, 1), &symbol_id, type_id);
-    if (Insert_Var_Symbol(symbol_id, var_type) == false) 
+    if (Insert_Var_Symbol(symbol_id, var_type, true) == false) 
         // Report_Errors(3, cur_root);
     
     if (CHILD(cur_root, 3) != NULL)
@@ -689,7 +692,7 @@ void Translate_DFS_Func_Declared(TreeNode* cur_root, Type* rtn, bool declared_on
             // }
         }
         else
-            Insert_Func_Symbol(func_id, func_type, cur_root);
+            Insert_Func_Symbol(func_id, func_type, cur_root, true);
         Reset_Scope();
     }
     else{
@@ -700,12 +703,13 @@ void Translate_DFS_Func_Declared(TreeNode* cur_root, Type* rtn, bool declared_on
             FuncParamList* pt = func_type->func.param_list;
 
             while(pt!=NULL){
-                Insert_Var_Symbol(pt->param_name, pt->param_type);
+                Insert_Var_Symbol(pt->param_name, pt->param_type, true);
                 SymbolRecord* var_func_symbol = Find_Var_Func_Symbol(pt->param_name);
                 IROperand* operand_param = var_func_symbol->operand;
                 Gen_1_Operands_Code(IR_PARAM, operand_param);
-
-                if (var_func_symbol->symbol_type->kind != BASIC)
+                
+                // All the array or the structure is called by reference..
+                if (var_func_symbol->symbol_type->kind != BASIC && var_func_symbol->symbol_type->kind != UNKNOWN) 
                     var_func_symbol->operand = Modify_Operator(operand_param, OP_MDF_DEREFERENCE);
                 pt = pt->next;
             }
@@ -724,7 +728,7 @@ void Translate_DFS_Func_Declared(TreeNode* cur_root, Type* rtn, bool declared_on
                 Delete_Var_Func_Symbol(func_id);
             }
         }
-        if (Insert_Func_Symbol(func_id, func_type, cur_root) == false){
+        if (Insert_Func_Symbol(func_id, func_type, cur_root, true) == false){
             // Report_Errors(4, CHILD(cur_root, 1));
         }
     }
