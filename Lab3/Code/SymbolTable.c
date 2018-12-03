@@ -16,6 +16,8 @@ SymbolNode* symbol_scope_stack[MAX_SCOPE_NUM + 1];
 static int scope_level = 0;
 static int scope_backup = -1; 
 
+extern Type* func_ret_type4translate;
+
 /* Recommended hashing method in the given guidance */
 unsigned int Hash_Method_PJW(char* name){
     unsigned int val = 0, idx;
@@ -142,7 +144,7 @@ bool Insert_Var_Func_Symbol_Node(SymbolRecord* symbol_record){
 }
 
 /* Insert a variable symbol node */
-bool Insert_Var_Symbol(char* var_symbol_id, Type* symbol_type){
+bool Insert_Var_Symbol(char* var_symbol_id, Type* symbol_type, bool flag){
     assert(symbol_type->kind != FUNCTION);
 
     // printf("[INFO] Insert symbol \"%s\"\n", var_symbol_id);
@@ -151,17 +153,30 @@ bool Insert_Var_Symbol(char* var_symbol_id, Type* symbol_type){
     var_symbol_record->symbol_type = symbol_type;
     var_symbol_record->record_name = var_symbol_id;
 
+    if (flag == true){
+        // In functions
+        if (scope_level == IMPLEMENTED || func_ret_type4translate != NULL)
+            var_symbol_record->operand = New_Variable();
+    }
+    else
+        var_symbol_record->operand = NULL;
+
     return Insert_Var_Func_Symbol_Node(var_symbol_record);
 }
 
 /* Insert a function symbol node */
-bool Insert_Func_Symbol(char* func_symbol_id, Type* symbol_type, TreeNode* tree_node){
+bool Insert_Func_Symbol(char* func_symbol_id, Type* symbol_type, TreeNode* tree_node, bool flag){
     assert(symbol_type->kind == FUNCTION);
 
     SymbolRecord* func_symbol_record = malloc(sizeof(SymbolRecord));
     func_symbol_record->symbol_type = symbol_type;
     func_symbol_record->record_name = func_symbol_id;
     func_symbol_record->tree_node = tree_node;
+
+    if (flag == true)
+        func_symbol_record->operand = Gen_Operand(OP_FUNCTION, OP_MDF_NONE, -1, func_symbol_id);
+    else
+        func_symbol_record->operand = NULL;
     
     /* Judge whether the given function is declared-only or not only declared but also implemented */
     if (scope_level != DECLARED_ONLY)
@@ -420,4 +435,31 @@ void Reset_All(){
 
     for (idx=0; idx<=MAX_SCOPE_NUM;++idx)
         symbol_scope_stack[idx] = NULL;
+}
+
+void Initialize_READ_WRITE(){
+    Type* int_type = NULL;
+    Create_Type_Basic(&int_type, "int");
+
+    // Create READ
+    Type* func_read = malloc(sizeof(Type));
+    func_read->kind = FUNCTION;
+    func_read->func.rtn = int_type;
+    func_read->func.param_list = NULL;
+
+
+    FuncParamList* param_list = malloc(sizeof(FuncParamList));
+    param_list->param_type = int_type;
+    param_list->param_name = NULL;
+    param_list->next = NULL;
+    param_list->prev = NULL;
+
+    // Create WRITE
+    Type* func_write = malloc(sizeof(Type));
+    func_write->kind = FUNCTION;
+    func_write->func.rtn = NULL;
+    func_write->func.param_list = param_list;
+
+    Insert_Func_Symbol("read", func_read, NULL, true);
+    Insert_Func_Symbol("write", func_write, NULL, true);
 }

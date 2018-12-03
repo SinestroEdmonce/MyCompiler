@@ -38,10 +38,10 @@ SymbolRecord* Find_Var_Func_Symbol(char* symbol_id);
 StructureSymbol* Find_Structure_Symbol(char* structure_symbol_id);
 
 /* A Function used to insert a variable symbol node */
-bool Insert_Var_Symbol(char* symbol_id, Type* symbol_type);
+bool Insert_Var_Symbol(char* symbol_id, Type* symbol_type, bool flag);
 
 /* A Function used to insert a function symbol node */
-bool Insert_Func_Symbol(char* func_symbol_id, Type* symbol_type, TreeNode* tree_node);
+bool Insert_Func_Symbol(char* func_symbol_id, Type* symbol_type, TreeNode* tree_node, bool flag);
 
 /* A Function used to insert a structure symbol node */
 bool Insert_Structure_Symbol(char* structure_symbol_id, Structure* structure);
@@ -79,5 +79,9 @@ void Pop_Scope();
 
 /* A Function used to reset the hashtable, the scopestack and the scope level */
 void Reset_All();
+
+/* A Function used to initialize the symbol table, adding READ and WRITE */
+void Initialize_READ_WRITE();
+
 
 #endif
