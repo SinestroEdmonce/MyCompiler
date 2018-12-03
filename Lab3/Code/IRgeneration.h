@@ -174,4 +174,7 @@ IROperand* Gen_Imme_Op(int value_int, float value_float, bool flag);
 /* Generate new other operands */
 IROperand* Gen_Operand(OP_TYPE op_type, MODIFIER_TYPE mod_type, int num, char* name);
 
+/* A method used to modify the MODTYPE of the operand */
+IROperand* Modify_Operator(IROperand* operand, MODIFIER_TYPE mod_type);
+
 #endif

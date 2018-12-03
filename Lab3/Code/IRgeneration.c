@@ -484,6 +484,32 @@ IROperand* Gen_Imme_Op(int value_int, float value_float, bool flag){
     return new_imme;
 }
 
+IROperand* Modify_Operator(IROperand* operand, MODIFIER_TYPE mod_type){
+    assert(operand->kind == OP_TEMP_VAR || operand->kind == OP_VARIABLE);
+
+    IROperand* operand_instead = malloc(sizeof(IROperand));
+    *operand_instead = *operand;
+
+    switch(operand->modifier){
+        case OP_MDF_NONE:{
+            operand_instead->modifier = mod_type;
+            break;
+        }
+        case OP_MDF_FETCH_ADDR:{
+            assert(mod_type == OP_MDF_DEREFERENCE);
+            operand_instead->modifier = OP_MDF_NONE;
+            break;
+        }
+        case OP_MDF_DEREFERENCE:{
+            assert(mod_type == OP_MDF_FETCH_ADDR);
+            operand_instead->modifier = OP_MDF_NONE;
+            break;
+        }
+        default: assert(false);
+    }
+    return operand_instead;
+}
+
 /* Generate new operands */
 IROperand* Gen_Operand(OP_TYPE op_type, MODIFIER_TYPE mod_type, int num, char* name){
     IROperand* new_op = malloc(sizeof(IROperand));
@@ -495,7 +521,7 @@ IROperand* Gen_Operand(OP_TYPE op_type, MODIFIER_TYPE mod_type, int num, char* n
             new_op->var_label_num = num;
             break;
         }
-        case OP_VARIABLE:{case OP_FUNCTION:{
+        case OP_VARIABLE:case OP_FUNCTION:{
             new_op->var_func_name = name;
             break;
         }
@@ -503,4 +529,6 @@ IROperand* Gen_Operand(OP_TYPE op_type, MODIFIER_TYPE mod_type, int num, char* n
     }
 
     return new_op;
+
 }
+
