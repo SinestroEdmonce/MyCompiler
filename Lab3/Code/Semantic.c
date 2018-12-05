@@ -529,7 +529,7 @@ Structure* Semantic_DFS_Structure_Specifier(TreeNode* cur_root){
         // StructSpecifier: STRUCT LC DefList RC
         structure = malloc(sizeof(Structure));
 
-        if (CHILD(cur_root, 3) != NULL && strcmp(CHILD(cur_root, 4)->type, "DefList") == 0){
+        if (CHILD(cur_root, 3) != NULL && strcmp(CHILD(cur_root, 3)->type, "DefList") == 0){
             Push_Scope();
             structure->fields = Semantic_DFS_Defined_List(CHILD(cur_root, 3));
             Pop_Scope();
