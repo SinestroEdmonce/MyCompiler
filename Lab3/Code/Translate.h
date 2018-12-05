@@ -87,4 +87,9 @@ FuncArgsList* Translate_DFS_Args(TreeNode* cur_root);
 /* Deepth-first traversal for Stmt branch */
 void Translate_DFS_Stmt(TreeNode* cur_root);
 
+/* TODO: to implement Get_Type_Size() 
+ * The function is used to obtain the memory size that the variable or the data type is going to occupy
+ */
+int Get_Type_Size(Type* type); 
+
 #endif

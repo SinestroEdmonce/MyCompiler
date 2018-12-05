@@ -157,6 +157,40 @@ Type* Translate_Get_Field_Type(Structure* strcuture_type, char* field_name){
     return structure_field->field_type;
 }
 
+/* The function that help allocate the declared type's memory size */
+int Get_Type_Size(Type* type){
+    assert(type->kind != FUNCTION);
+    int memory_size = 0;
+
+    switch(type->kind){
+        case STRUCTURE:{
+            FieldList* field = type->structure->fields;
+            while(field!=NULL){
+                memory_size += Get_Type_Size(field->field_type);
+                field = field->next;
+            }
+            break;
+        }
+        case BASIC:{
+            /* TODO: Float available */
+            memory_size = 4;
+            break;
+        }
+        case ARRAY:{
+            memory_size = Get_Type_Size(type->array.elem);
+            ArraySizeList* size_list = type->array.array_size;
+            
+            while(size_list!=NULL){
+                memory_size = memory_size*(size_list->size);
+                size_list = size_list->next;
+            }
+            break;
+        }
+        default: assert(false);
+    }
+    return memory_size;
+}
+
 /* A deepth-first traversal for the Args branch */
 FuncArgsList* Translate_DFS_Args(TreeNode* cur_root){
     //Args: Exp COMMA Args|Exp
@@ -445,7 +479,6 @@ FieldList* Translate_DFS_Declared(TreeNode* cur_root, Type* type_id){
             // Dec: VarDec
             if (pt->field_type->kind == STRUCTURE || pt->field_type->kind == ARRAY){
                 IROperand* operand = Find_Var_Func_Symbol(pt->field_name)->operand;
-                /* TODO: to implement Get_Type_Size() */
                 Gen_2_Operands_Code(IR_DEC, NULL, operand, Get_Type_Size(pt->field_type));
             }
         }
