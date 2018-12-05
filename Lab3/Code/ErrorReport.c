@@ -1,5 +1,7 @@
 #include "ErrorReport.h"
 
+extern unsigned int semantic_errors;
+
 const char* ERROR_EXPLANATION_FORMAT[] = {
     NULL,
     "Undefined variable.",
@@ -24,6 +26,7 @@ const char* ERROR_EXPLANATION_FORMAT[] = {
 };
 
 void Report_Errors(int error_type, TreeNode* tree_node){
+    semantic_errors += 1;
     printf("Error type %d at Line %d: ", error_type, tree_node->linenum);
     printf("%s\n", ERROR_EXPLANATION_FORMAT[error_type]);
 }
