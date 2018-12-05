@@ -79,7 +79,7 @@ FieldList* Translate_DFS_Declared(TreeNode* cur_root, Type* type_id);
 void Translate_DFS_CompSt(TreeNode* cur_root);
 
 /* Deepth-first traversal for Exp branch */
-Type* Translate_DFS_Expression(TreeNode* cur_root);
+Type* Translate_DFS_Expression(TreeNode* cur_root, IROperand* operand);
 
 /* Deepth-first traversal for Args branch */
 FuncArgsList* Translate_DFS_Args(TreeNode* cur_root);

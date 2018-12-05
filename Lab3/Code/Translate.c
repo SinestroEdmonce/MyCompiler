@@ -20,7 +20,7 @@ void Translate_DFS(TreeNode* cur_root){
         Translate_DFS_CompSt(cur_root);
     }
     else if (strcmp(cur_root->type, "Exp") == 0){
-        Translate_DFS_Expression(cur_root);
+        Translate_DFS_Expression(cur_root, NULL);
     }
     else if (strcmp(cur_root->type, "Stmt") == 0){
         Translate_DFS_Stmt(cur_root);
@@ -163,9 +163,14 @@ FuncArgsList* Translate_DFS_Args(TreeNode* cur_root){
     assert(strcmp(cur_root->type, "Args") == 0);
     
     FuncArgsList* args_list = malloc(sizeof(FuncArgsList));
-    args_list->args_type = Translate_DFS_Expression(CHILD(cur_root, 1));
+    IROperand* temp = New_Temp_Var();
+
+    args_list->args_type = Translate_DFS_Expression(CHILD(cur_root, 1), temp);
     args_list->next = NULL;
     args_list->prev = NULL;
+
+    temp = Clean_IR_Temp_Var(temp);
+    args_list->operand = temp;
 
     if (CHILD(cur_root, 3) != NULL){
         args_list->next = Translate_DFS_Args(CHILD(cur_root, 3));
@@ -179,7 +184,7 @@ FuncArgsList* Translate_DFS_Args(TreeNode* cur_root){
 }
 
 /* A deepth-first traversal for the Exp branch */
-Type* Translate_DFS_Expression(TreeNode* cur_root){
+Type* Translate_DFS_Expression(TreeNode* cur_root, IROperand* operand){
     assert(strcmp(cur_root->type, "Exp") == 0);
 
     if (CHILD(cur_root, 2) == NULL){
@@ -447,7 +452,7 @@ FieldList* Translate_DFS_Declared(TreeNode* cur_root, Type* type_id){
         else{
             // Dec: VarDec ASSIGNOP Exp
             /* According to the regulation, only ID can be assigned with a initialized value */
-            assert(strcmp(CHILD(CHILD(cur_root, 1), 1)->type, "ID") == 0);
+            assert(strcmp(cur_root->child->child->type, "ID") == 0);
 
             IROperand* operand = Find_Var_Func_Symbol(pt->field_name)->operand;
             Type* exp_type = Translate_DFS_Expression(CHILD(cur_root, 3), operand);
@@ -749,27 +754,72 @@ void Translate_DFS_CompSt(TreeNode* cur_root){
 
 /* A deepth-first traversal method for searching the Stmt branch */
 void Translate_DFS_Stmt(TreeNode* cur_root){
+    // Stmt: Exp SEMI|CompSt|RETURN Exp SEMI
+    //       IF LP Exp RP Stmt|IF LP Exp RP Stmt ELSE Stmt
+    //       WHILE LP Exp RP Stmt 
     assert(strcmp(cur_root->type, "Stmt") == 0);
 
-    if (CHILD(cur_root, 1) != NULL && strcmp(CHILD(cur_root, 1)->type, "CompSt") == 0){
+    if (strcmp(CHILD(cur_root,1)->type, "Exp") == 0){
+        Translate_DFS_Expression(CHILD(cur_root, 1), NULL);
+        return;
+    }
+    else if (strcmp(CHILD(cur_root,1)->type, "CompSt") == 0){
         Push_Scope();
         Translate_DFS_CompSt(CHILD(cur_root, 1));
         Pop_Scope();
+        return;
     }
-    else if (CHILD(cur_root, 1) != NULL && strcmp(CHILD(cur_root, 1)->type, "RETURN") == 0){
-        // Stmt: RETURN Exp SEMI
-        Type* rtn_type = Translate_DFS_Expression(CHILD(cur_root, 2));
+    else if (strcmp(CHILD(cur_root,1)->type, "RETURN") == 0){
+        IROperand* temp = New_Temp_Var();
+        Type* rtn_type = Translate_DFS_Expression(CHILD(cur_root, 1), temp);
+        temp = Clean_IR_Temp_Var(temp);
 
-        if (Translate_Is_Type_Equal(rtn_type, func_ret_type4translate) == false){
-            // Report_Errors(8, CHILD(cur_root, 2));
-            return;
+        /* If the return value is a basic type, then immediately generate the new IR code.
+         * Otherwise, modify the modifier into the token for fetching address(&).
+         */
+        if (rtn_type->kind == BASIC)
+            Gen_1_Operands_Code(IR_RETURN, temp);
+        else
+            Gen_1_Operands_Code(IR_RETURN, Modify_Operator(temp, OP_MDF_FETCH_ADDR));
+        return;
+    }
+    else if (strcmp(CHILD(cur_root,1)->type, "IF") == 0){
+        IROperand* label1 = New_Label();
+
+        if (CHILD(cur_root, 6) == NULL){
+            // Stmt: IF LP Exp RP Stmt
+            Translate_DFS_Expression_Condition(CHILD(cur_root, 3), NULL, label1);
+            Translate_DFS_Stmt(CHILD(cur_root, 5));
+            Gen_1_Operands_Code(IR_LABEL, label1);
         }
+        else{
+            // Stmt: IF LP EXP RP Stmt ELSE Stmt
+            Translate_DFS_Expression_Condition(CHILD(cur_root, 3), NULL, label1);
+            Translate_DFS_Stmt(CHILD(cur_root, 5));
+
+            IROperand* label2 = New_Label();
+            Gen_1_Operands_Code(IR_GOTO, label2);
+            Gen_1_Operands_Code(IR_LABEL, label1);
+            Translate_DFS_Stmt(CHILD(cur_root, 7));
+            Gen_1_Operands_Code(IR_LABEL, label2);
+        }
+        return;
     }
-    else{  
-        TreeNode* pt = CHILD(cur_root, 1);
-        for(;pt!=NULL;pt=pt->sibling)
-            Translate_DFS(pt);
+    else if (strcmp(CHILD(cur_root,1)->type, "WHILE") == 0){
+        IROperand* label1 = New_Label();
+        IROperand* label2 = New_Label();
+
+        Gen_1_Operands_Code(IR_LABEL, label1);
+        Translate_DFS_Expression_Condition(CHILD(cur_root, 3), NULL, label2);
+        Translate_DFS_Stmt(CHILD(cur_root, 5));
+        
+        Gen_1_Operands_Code(IR_GOTO, label1);
+        Gen_1_Operands_Code(IR_LABEL, label2);
+
+        return;
     }
+    else
+        assert(false);
 }
 
 /* A deepth-first traversal method for searching the ExtDef branch */
