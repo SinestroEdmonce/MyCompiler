@@ -87,9 +87,13 @@ FuncArgsList* Translate_DFS_Args(TreeNode* cur_root);
 /* Deepth-first traversal for Stmt branch */
 void Translate_DFS_Stmt(TreeNode* cur_root);
 
-/* TODO: to implement Get_Type_Size() 
- * The function is used to obtain the memory size that the variable or the data type is going to occupy
- */
+/* The function is used to obtain the memory size that the variable or the data type is going to occupy */
 int Get_Type_Size(Type* type); 
+
+/* TODO: Deepth-first traversal for Exp branch, only aiming at CONDITION Expression */
+Type* Translate_DFS_Expression_Condition(TreeNode* cur_root, IROperand* label_true, IROperand* label_false);
+
+/* TODO: Deepth-first traversal for Exp branch, only aiming at LEFT_VALUE Expression */
+Type* Translate_DFS_Expression_Address(TreeNode* cur_root, IROperand* operand);
 
 #endif

@@ -217,6 +217,18 @@ FuncArgsList* Translate_DFS_Args(TreeNode* cur_root){
     return args_list;
 }
 
+/* A deepth-first traversal for the Exp branch, only aiming at LEFT_VALUE branch */
+Type* Translate_DFS_Expression_Address(TreeNode* cur_root, IROperand* operand){
+    assert(strcmp(cur_root->type, "Exp") == 0);
+
+}
+
+/* A deepth-first traversal for the Exp branch, only aiming at CONDITION branch */
+Type* Translate_DFS_Expression_Condition(TreeNode* cur_root, IROperand* label_true, IROperand* label_false){
+    assert(strcmp(cur_root->type, "Exp") == 0);
+    
+}
+
 /* A deepth-first traversal for the Exp branch */
 Type* Translate_DFS_Expression(TreeNode* cur_root, IROperand* operand){
     assert(strcmp(cur_root->type, "Exp") == 0);
@@ -566,10 +578,8 @@ Structure* Translate_DFS_Structure_Specifier(TreeNode* cur_root){
             structure->fields = NULL;
 
         char* structure_name = Translate_DFS_Opt_Tag(CHILD(cur_root, 2));
-        /* If find the same structure name in structure hashtable */
-        if (Insert_Structure_Symbol(structure_name, structure) == false){
-            // Report_Errors(16, CHILD(cur_root, 2));
-        }
+        /* Never find the same structure name in structure hashtable, if the semantic check is already done */
+        Insert_Structure_Symbol(structure_name, structure);
     }
     else if (strcmp(CHILD(cur_root, 2)->type, "LC") == 0){
         // StructSpecifier: STRUCT LC DefList RC
@@ -590,10 +600,6 @@ Structure* Translate_DFS_Structure_Specifier(TreeNode* cur_root){
         StructureSymbol* structure_symbol = Find_Structure_Symbol(structure_name);
         if (structure_symbol != NULL)
             structure = structure_symbol->structure_type;
-        else{
-            // Report_Errors(17, CHILD(cur_root, 2));
-            return NULL;
-        }
     }
 
     return structure;
@@ -630,8 +636,7 @@ void Translate_DFS_Extern_Declared_List(TreeNode* cur_root, Type* type_id){
 
     char* symbol_id;
     Type* var_type = Translate_DFS_Var_Declared(CHILD(cur_root, 1), &symbol_id, type_id);
-    if (Insert_Var_Symbol(symbol_id, var_type, true) == false) 
-        // Report_Errors(3, cur_root);
+    Insert_Var_Symbol(symbol_id, var_type, true);
     
     if (CHILD(cur_root, 3) != NULL)
         Translate_DFS_Extern_Declared_List(CHILD(cur_root, 3), type_id);
@@ -703,34 +708,14 @@ void Translate_DFS_Func_Declared(TreeNode* cur_root, Type* rtn, bool declared_on
     // Obtain the ID of the function
     char* func_id = Translate_DFS_Id(CHILD(cur_root, 1));
 
-    if (strcmp(CHILD(cur_root, 3)->type, "VarList") == 0){
+    if (strcmp(CHILD(cur_root, 3)->type, "VarList") == 0)
         func_type->func.param_list = Translate_DFS_Var_List(CHILD(cur_root, 3));
-
-        // FuncParamList* pt = func_type->func.param_list;
-        // while(pt != NULL){
-        //     Insert_Var_Symbol(pt->param_name, pt->param_type);
-        //     pt = pt->next;
-        // }
-    }
     if (declared_only == true){
         Set_Scope_Declared_Only();
 
         SymbolRecord* var_func_symbol = Find_Var_Func_Symbol(func_id);
-        if (var_func_symbol != NULL){
-            // if (var_func_symbol->symbol_type->kind == FUNCTION){
-            //     FuncParamList* pt_new = func_type->func.param_list;
-            //     FuncParamList* pt_declared = var_func_symbol->symbol_type->func.param_list;
+        Insert_Func_Symbol(func_id, func_type, cur_root, true);
 
-            //     if (Translate_Is_Params_Equal(pt_new, pt_declared) == false){
-            //         // Report_Errors(19, cur_root);
-            //     }
-            // }
-            // else{
-            //     // Report_Errors(4, cur_root);
-            // }
-        }
-        else
-            Insert_Func_Symbol(func_id, func_type, cur_root, true);
         Reset_Scope();
     }
     else{
@@ -759,16 +744,9 @@ void Translate_DFS_Func_Declared(TreeNode* cur_root, Type* rtn, bool declared_on
             FuncParamList* pt_declared = var_func_symbol->symbol_type->func.param_list;
             FuncParamList* pt_new = func_type->func.param_list;
 
-            if (Translate_Is_Params_Equal(pt_new, pt_declared) == false){
-                // Report_Errors(19, cur_root);
-            }
-            else{
-                Delete_Var_Func_Symbol(func_id);
-            }
+            Delete_Var_Func_Symbol(func_id);
         }
-        if (Insert_Func_Symbol(func_id, func_type, cur_root, true) == false){
-            // Report_Errors(4, CHILD(cur_root, 1));
-        }
+        Insert_Func_Symbol(func_id, func_type, cur_root, true);
     }
 }
 
