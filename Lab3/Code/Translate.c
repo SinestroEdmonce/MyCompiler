@@ -429,29 +429,29 @@ FieldList* Translate_DFS_Declared(TreeNode* cur_root, Type* type_id){
     pt->next = NULL;
     pt->prev = NULL;
 
+    Insert_Var_Symbol(pt->field_name, pt->field_type, true);
     if (func_ret_type4translate == NULL){
-        // Now in structure
-        if (CHILD(cur_root, 3) != NULL){
-            // Report_Errors(15, cur_root);
-        }
-    } 
-    else if (CHILD(cur_root, 3) != NULL){
-        Type* exp_type_id = Translate_DFS_Expression(CHILD(cur_root, 3));
-
-        if (Translate_Is_Type_Equal(exp_type_id, pt->field_type) == false){
-            // Report_Errors(5, cur_root);
-        }
+        // In structure
+        return pt;
     }
-    if (Insert_Var_Symbol(pt->field_name, pt->field_type, true) == false){
-        if (func_ret_type4translate == NULL){
-            // Report_Errors(15, cur_root->child);
-        } 
-        else{
-            // Report_Errors(3, cur_root->child);
+    else{
+        // In function
+        if (CHILD(cur_root, 2) == NULL){
+            // Dec: VarDec
+            if (pt->field_type->kind == STRUCTURE || pt->field_type->kind == ARRAY){
+                IROperand* operand = Find_Var_Func_Symbol(pt->field_name)->operand;
+                /* TODO: to implement Get_Type_Size() */
+                Gen_2_Operands_Code(IR_DEC, NULL, operand, Get_Type_Size(pt->field_type));
+            }
         }
+        else{
+            // Dec: VarDec ASSIGNOP Exp
+            /* According to the regulation, only ID can be assigned with a initialized value */
+            assert(strcmp(CHILD(CHILD(cur_root, 1), 1)->type, "ID") == 0);
 
-        free(pt);
-        return NULL;
+            IROperand* operand = Find_Var_Func_Symbol(pt->field_name)->operand;
+            Type* exp_type = Translate_DFS_Expression(CHILD(cur_root, 3), operand);
+        }
     }
     return pt;
 }
@@ -537,7 +537,7 @@ Structure* Translate_DFS_Structure_Specifier(TreeNode* cur_root){
         // StructSpecifier: STRUCT LC DefList RC
         structure = malloc(sizeof(Structure));
 
-        if (CHILD(cur_root, 3) != NULL && strcmp(CHILD(cur_root, 4)->type, "DefList") == 0){
+        if (CHILD(cur_root, 3) != NULL && strcmp(CHILD(cur_root, 3)->type, "DefList") == 0){
             Push_Scope();
             structure->fields = Translate_DFS_Defined_List(CHILD(cur_root, 3));
             Pop_Scope();
