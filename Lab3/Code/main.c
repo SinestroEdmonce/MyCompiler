@@ -127,11 +127,11 @@ Args* Args_Parser(int argc, char** argv){
 //                     Translate_Analysis();
 //                     if (args->out_file != NULL){
 //                         FILE* out = fopen(args->out_file, "a+");
-//                         Print_IR_Code(out, ir_list_head);
+//                         Print_IR_Code_List(out);
 //                         fclose(out);
 //                     }
 //                     else
-//                         Print_IR_Code(NULL, ir_list_head);
+//                         Print_IR_Code_List(NULL);
 //                 }
 //             }
 //         }      
@@ -145,7 +145,7 @@ Args* Args_Parser(int argc, char** argv){
 
 int main(){
     
-    FILE* file = fopen("./Test/test1.txt", "r");
+    FILE* file = fopen("./Test/test3.txt", "r");
 
     yyrestart(file);
     //yydebug=1;
