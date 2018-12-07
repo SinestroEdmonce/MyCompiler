@@ -251,6 +251,20 @@ RELOP_TYPE Get_Relop(TreeNode* tree_node, bool flag){
     }
 }
 
+/* Obtain the structure's information to determine the memory size that structure member occupys */
+unsigned int Get_Field_Offset(Structure* structure, char* symbol_id){
+    FieldList* field = structure->fields;
+    unsigned int offset = 0;
+    
+    while (field!=NULL){
+        if (strcmp(field->field_name, symbol_id) == 0)
+            return offset;
+        field = field->next;
+        offset += 4; // int/float: 4 bytes... No embedded structure..
+    }
+    assert(false);
+}
+
 /* A deepth-first traversal for the Exp branch, only aiming at LEFT_VALUE branch */
 Type* Translate_DFS_Expression_Address(TreeNode* cur_root, IROperand* operand){
     assert(strcmp(cur_root->type, "Exp") == 0);
@@ -326,7 +340,7 @@ Type* Translate_DFS_Expression_Address(TreeNode* cur_root, IROperand* operand){
                 return NULL;
             
             char* symbol_id = Translate_DFS_Id(CHILD(cur_root, 3));
-            Type* field = Get_Field_Type(expr1->structure, symbol_id);
+            Type* field = Translate_Get_Field_Type(expr1->structure, symbol_id);
             unsigned int offset= Get_Field_Offset(expr1->structure, symbol_id);
 
             IROperand* t2 = New_Immediate(offset);
@@ -432,6 +446,18 @@ Type* Translate_DFS_Expression_Condition(TreeNode* cur_root, IROperand* label_tr
     assert(false);
 }
 
+/* Generate an argument list's intermediate representaion code */
+void Gen_IR_Args(FuncArgsList* args_list) {
+    if (args_list->next!=NULL)
+        Gen_IR_Args(args_list->next);
+
+    if (args_list->args_type->kind == BASIC)
+        Gen_1_Operands_Code(IR_ARG, args_list->operand);
+    else{
+        Gen_1_Operands_Code(IR_ARG, Modify_Operator(args_list->operand, OP_MDF_FETCH_ADDR));
+    }
+}
+
 /* A deepth-first traversal for the Exp branch */
 Type* Translate_DFS_Expression(TreeNode* cur_root, IROperand* operand){
     assert(strcmp(cur_root->type, "Exp") == 0);
@@ -442,49 +468,62 @@ Type* Translate_DFS_Expression(TreeNode* cur_root, IROperand* operand){
             char* id_name = Translate_DFS_Id(CHILD(cur_root, 1));
             SymbolRecord* symbol = Find_Var_Func_Symbol(id_name);
 
-            if (symbol == NULL){
-                // Report_Errors(1, CHILD(cur_root, 1));
-                return NULL;
-            }
+            if (operand!=NULL)
+                Gen_2_Operands_Code(IR_ASSIGN, operand, symbol->operand, -1);
             return symbol->symbol_type;
         }
         else if (strcmp(CHILD(cur_root, 1)->type, "INT") == 0){
-            Translate_DFS_Int(CHILD(cur_root, 1));
+            int int_value = Translate_DFS_Int(CHILD(cur_root, 1));
             Type* int_type = NULL;
             Create_Type_Basic(&int_type, "int");
+
+            IROperand* t1 = New_Immediate(int_value);
+            if (operand!=NULL)
+                Gen_2_Operands_Code(IR_ASSIGN, operand, t1, -1);
             return int_type;
         }
         else{
-            Translate_DFS_Float(CHILD(cur_root, 1));
+            float float_value = Translate_DFS_Float(CHILD(cur_root, 1));
             Type* float_type = NULL;
             Create_Type_Basic(&float_type, "float");
+            
+            printf("[INFO] Warnings: Float value is not supported and will be transform into Integer..\n");
+
+            IROperand* t1 = New_Immediate((int)float_value);
+            if (operand!=NULL)
+                Gen_2_Operands_Code(IR_ASSIGN, operand, t1, -1);
             return float_type;
         }
     }
     else if (CHILD(cur_root, 3) == NULL){
         //Exp: MINUS Exp|NOT Exp
         if (strcmp(CHILD(cur_root, 1)->type, "MINUS") == 0){
-            Type* type_exp = Translate_DFS_Expression(CHILD(cur_root, 2));
+            IROperand* t1 = New_Temp_Var();
+            Type* type_exp = Translate_DFS_Expression(CHILD(cur_root, 2), t1);
+            t1 = Clean_IR_Temp_Var(t1);
 
             if (type_exp == NULL)
                 return NULL;
-            else if (type_exp->kind == BASIC)
-                return type_exp;
-            else{
-                // Report_Errors(7, CHILD(cur_root, 2));
-                return NULL;
-            }
+            
+            IROperand* imme_zero = New_Immediate(0);
+            if (operand!=NULL)
+                Gen_3_Operands_Code(IR_SUB, operand, imme_zero, t1, NONE_TYPE);
+            return type_exp;
         }
         else{
-            Type* type_exp = Translate_DFS_Expression(CHILD(cur_root, 2));
+            IROperand* imme_zero = New_Immediate(0);
+            if (operand!=NULL)
+                Gen_2_Operands_Code(IR_ASSIGN, operand, imme_zero, -1);
+
+            IROperand* label1 = New_Label();    
+            Type* type_exp = Translate_DFS_Expression(CHILD(cur_root, 2), label1);
             if (type_exp == NULL)
                 return NULL;
-            if (type_exp->kind == BASIC && type_exp->basic == TYPE_INT)
-                return type_exp;
-            else{
-                // Report_Errors(7, CHILD(cur_root, 2));
-                return NULL;
-            }
+            
+            IROperand* imme_one = New_Immediate(1);
+            if (operand!=NULL) 
+                Gen_2_Operands_Code(IR_ASSIGN, operand, imme_one, -1);
+            Gen_1_Operands_Code(IR_LABEL, label1);
         }
     }
     else if (CHILD(cur_root, 4) == NULL && strcmp(CHILD(cur_root, 2)->type, "LP") != 0) {
@@ -495,142 +534,125 @@ Type* Translate_DFS_Expression(TreeNode* cur_root, IROperand* operand){
          *     |Exp OR Exp|Exp DOT ID 
          */
         if (strcmp(CHILD(cur_root, 2)->type, "Exp") == 0)
-            return Translate_DFS_Expression(CHILD(cur_root, 2));
+            return Translate_DFS_Expression(CHILD(cur_root, 2), operand);
         else if (strcmp(CHILD(cur_root, 2)->type, "ASSIGNOP") == 0){
-            Type* left_exp_type = Translate_DFS_Expression(CHILD(cur_root, 1));
-            Type* right_exp_type = Translate_DFS_Expression(CHILD(cur_root, 3));
+            IROperand* t1 = New_Temp_Var();
+            IROperand* t2 = New_Temp_Var();
+
+            Type* left_exp_type = Translate_DFS_Expression(CHILD(cur_root, 1), t1);
+            t1 = Clean_IR_Temp_Var(t1);
+            Type* right_exp_type = Translate_DFS_Expression(CHILD(cur_root, 3), t2);
+            t2 = Clean_IR_Temp_Var(t2);
+            
 
             if (left_exp_type == NULL || right_exp_type == NULL)
                 return NULL;
             
-            TreeNode* left_node = CHILD(cur_root, 1);
-            TreeNode* child_depend = left_node;
-            int left_value_flag = child_depend->left_value;
-            // Find the node that can be treated as a left value
-            while(child_depend->left_value == DEPEND_ON_CHILD)
-                child_depend = CHILD(child_depend, child_depend->child_num_depend);
-
-            if (child_depend->left_value == ID_LEFT){
-                assert(strcmp(child_depend->type, "ID") == 0);
-
-                SymbolRecord* symbol_depend = Find_Var_Func_Symbol(child_depend->value);
-                if (symbol_depend != NULL && symbol_depend->symbol_type->kind != FUNCTION)
-                    left_value_flag = 1;
-            }
-            else
-                left_value_flag = child_depend->left_value;
+            IROperand* t3 = Modify_Operator(t1, OP_MDF_DEREFERENCE);
+            Gen_2_Operands_Code(IR_ASSIGN, t3, t2, -1);
             
-            if (left_value_flag == NOT_LEFT_VALUE){
-                // Report_Errors(6, CHILD(cur_root, 1));
-                return NULL;
-            }
-            if (Translate_Is_Type_Equal(left_exp_type, right_exp_type) == false){
-                // Report_Errors(5, cur_root);
-                return NULL;
-            }
+            Clean_IR_Assign();
+
+            if (operand!=NULL) 
+                Gen_2_Operands_Code(IR_ASSIGN, operand, t3, -1);
             return left_exp_type;
         }
         else if (strcmp(CHILD(cur_root, 2)->type, "DOT") == 0){
-            Type* exp_type = Translate_DFS_Expression(CHILD(cur_root, 1));
+            IROperand* t1 = New_Temp_Var();
+            Type* exp_type = Translate_DFS_Expression(CHILD(cur_root, 1), t1);
+            t1 = Clean_IR_Temp_Var(t1);
 
             if (exp_type == NULL)
                 return NULL;
             
-            if (exp_type->kind != STRUCTURE){
-                // Report_Errors(13, CHILD(cur_root, 1));
-                return NULL;
-            }
-
-            Type* field_type = Translate_Get_Field_Type(exp_type->structure, Translate_DFS_Id(CHILD(cur_root, 3)));
-            if (field_type != NULL)
-                return field_type;
-            else{
-                // Report_Errors(14, CHILD(cur_root, 3));
-                return NULL;
-            }
+            IROperand* t2 = Modify_Operator(t1, OP_MDF_DEREFERENCE);
+            Gen_2_Operands_Code(IR_ASSIGN, operand, t2, -1);
+            return exp_type;
         }
-        else{
-            Type* left_exp_type = Translate_DFS_Expression(CHILD(cur_root, 1));
-            Type* right_exp_type = Translate_DFS_Expression(CHILD(cur_root, 3));
-            
+        else if (strcmp(CHILD(cur_root, 2)->type, "PLUS") == 0
+                || strcmp(CHILD(cur_root, 2)->type, "STAR") == 0
+                || strcmp(CHILD(cur_root, 2)->type, "DIV") == 0
+                || strcmp(CHILD(cur_root, 2)->type, "MINUS") == 0){
+
+            IROperand* t1 = New_Temp_Var();
+            IROperand* t2 = New_Temp_Var();
+
+            Type* left_exp_type = Translate_DFS_Expression(CHILD(cur_root, 1), t1);
+            t1 = Clean_IR_Temp_Var(t1);
+            Type* right_exp_type = Translate_DFS_Expression(CHILD(cur_root, 3), t2);
+            t2 = Clean_IR_Temp_Var(t2);
+
+            if (operand!=NULL){
+                if (strcmp(CHILD(cur_root, 2)->type, "PLUS") == 0)
+                    Gen_3_Operands_Code(IR_ADD, operand, t1, t2, NONE_TYPE);
+                if (strcmp(CHILD(cur_root, 2)->type, "STAR") == 0)
+                    Gen_3_Operands_Code(IR_MUL, operand, t1, t2, NONE_TYPE);
+                if (strcmp(CHILD(cur_root, 2)->type, "DIV") == 0)
+                    Gen_3_Operands_Code(IR_DIV, operand, t1, t2, NONE_TYPE);
+                if (strcmp(CHILD(cur_root, 2)->type, "MINUS") == 0)
+                    Gen_3_Operands_Code(IR_SUB, operand, t1, t2, NONE_TYPE);
+            }
             if (left_exp_type == NULL || right_exp_type == NULL)
                 return NULL;
-            
-            if (Translate_Is_Type_Equal(left_exp_type, right_exp_type) == false){
-                // Report_Errors(7, cur_root);
-                return NULL;
-            }
 
-            if (strcmp(CHILD(cur_root, 2)->type, "OR") == 0 || strcmp(CHILD(cur_root, 2)->type, "AND") == 0){
-                if (left_exp_type->kind != BASIC){
-                    // Report_Errors(7, cur_root);
-                    return NULL;
-                }
-                if (left_exp_type->basic != TYPE_INT){
-                    // Report_Errors(7, cur_root);
-                    return NULL;
-                }
-            }
-            else{
-                if (left_exp_type->kind != BASIC){
-                    // Report_Errors(7, cur_root);
-                    return NULL;
-                }
-            }
             return left_exp_type;
+        }
+        else{
+            IROperand* imme_zero = New_Immediate(0);
+            if (operand!=NULL)
+                Gen_2_Operands_Code(IR_ASSIGN, operand, imme_zero, -1);
+            
+            IROperand* label1 = New_Label();
+            Type* expr = Translate_DFS_Expression_Condition(cur_root, NULL, label1);
+
+            IROperand* imme_one = New_Immediate(1);
+            if (operand!=NULL)
+                Gen_2_Operands_Code(IR_ASSIGN, operand, imme_one, -1);
+            Gen_1_Operands_Code(IR_LABEL, label1);
+            
+            return expr;
         }
     }
     else if (strcmp(CHILD(cur_root, 1)->type, "ID") == 0){
         // Exp: ID LP Args RP|ID LP RP
         SymbolRecord* func_symbol = Find_Var_Func_Symbol(Translate_DFS_Id(CHILD(cur_root, 1)));
 
-        if (func_symbol == NULL){
-            // Report_Errors(2, CHILD(cur_root, 1));
-            return NULL;
-        }
-
-        if (func_symbol->symbol_type->kind != FUNCTION){
-            // Report_Errors(11, CHILD(cur_root, 1));
-            return NULL;
-        }
-
         FuncArgsList* args_list = NULL;
         if (strcmp(CHILD(cur_root, 3)->type, "Args") == 0)
             args_list = Translate_DFS_Args(CHILD(cur_root, 3));
-        
-        FuncParamList* param_list = func_symbol->symbol_type->func.param_list;
-        if (Translate_Is_Params_Args_Equal(param_list, args_list) == false){
-            // Report_Errors(9, CHILD(cur_root, 3));
+
+        if (strcmp(func_symbol->record_name, "read") == 0){
+            if (operand!=NULL)
+                Gen_1_Operands_Code(IR_READ, operand);
         }
+        else if (strcmp(func_symbol->record_name, "write") == 0){
+            Gen_1_Operands_Code(IR_READ, args_list->operand);
+        } 
+        else{
+            Gen_IR_Args(args_list);
+            IROperand* func = Gen_Operand(OP_FUNCTION, OP_MDF_NONE, -1, func_symbol->record_name);
             
-        
+            if (operand!=NULL)
+                Gen_2_Operands_Code(IR_CALL, operand, func, -1);
+            else{
+                IROperand* t1 = New_Temp_Var();
+                Gen_2_Operands_Code(IR_CALL, t1, func, -1);
+            }
+        }
         return func_symbol->symbol_type->func.rtn;
     }
     else if (strcmp(CHILD(cur_root, 1)->type, "Exp") == 0){
         // Exp: Exp LB Exp RB
-        Type* left_exp_type = Translate_DFS_Expression(CHILD(cur_root, 1));
+        IROperand* t1 = New_Temp_Var();
+        Type* left_exp_type = Translate_DFS_Expression_Address(cur_root, t1);
+        if (left_exp_type == NULL)
+            return NULL;
+        t1 = Clean_IR_Temp_Var(t1);
 
-        Type* pt = NULL;
-        if (left_exp_type == NULL || left_exp_type->kind != ARRAY){
-            // Report_Errors(10, CHILD(cur_root, 0));
-        }
-        else{
-            pt = malloc(sizeof(Type));
-            // Create a copy 
-            *pt = *left_exp_type;
-            pt->array.array_size = pt->array.array_size->next;
-            if (pt->array.array_size == NULL){
-                Type* tmp = pt;
-                pt = pt->array.elem;
-                free(tmp);
-            }
-        }
-
-        Type* right_exp_type = Translate_DFS_Expression(CHILD(cur_root, 3));
-        if (right_exp_type == NULL || right_exp_type->kind != BASIC || right_exp_type->basic != TYPE_INT){
-            // Report_Errors(12, CHILD(cur_root, 3));
-        }
-        return pt;   
+        IROperand* t2 = Modify_Operator(t1, OP_MDF_DEREFERENCE);
+        if (operand!=NULL)
+            Gen_2_Operands_Code(IR_ASSIGN, operand, t2, -1);
+        return left_exp_type;
     }
 
     assert(false);

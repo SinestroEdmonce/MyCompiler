@@ -93,6 +93,9 @@ int Get_Type_Size(Type* type);
 /* Obtain the RELOP type from the expression */
 RELOP_TYPE Get_Relop(TreeNode* tree_node, bool flag);
 
+/* Obtain the structure's information to determine the memory size that structure member occupys */
+unsigned int Get_Field_Offset(Structure* structure, char* symbol_id);
+
 /* TODO: Deepth-first traversal for Exp branch, only aiming at CONDITION Expression */
 Type* Translate_DFS_Expression_Condition(TreeNode* cur_root, IROperand* label_true, IROperand* label_false);
 

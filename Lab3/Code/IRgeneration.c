@@ -476,7 +476,7 @@ IROperand* Gen_Imme_Op(int value_int, float value_float, bool flag){
     new_imme->kind = OP_IMMEDIATE;
     new_imme->modifier = OP_MDF_NONE;
 
-    if (flag=true)
+    if (flag==true)
         new_imme->value_int = value_int;
     else
         new_imme->value_float = value_float;
