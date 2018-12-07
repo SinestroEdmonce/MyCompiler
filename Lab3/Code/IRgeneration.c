@@ -306,75 +306,146 @@ char* Operand(IROperand* operand){
 
 /* Output the intermediate representation code to the file */
 void Print_IR_Code(FILE* file, IRCode* code){
-    switch(code->kind) {
-        case IR_LABEL:{
-            fprintf(file, "LABEL %s :", Operand(code->src));
-            break;
-        }
-        case IR_FUNCTION:{
-            fprintf(file, "FUNCTION %s :", Operand(code->src));
-            break;
-        }       
-        case IR_ASSIGN:{
-            fprintf(file, "%s := %s", Operand(code->dst), Operand(code->src));
-            break;
+    if (file != NULL){
+        switch(code->kind) {
+            case IR_LABEL:{
+                fprintf(file, "LABEL %s :", Operand(code->src));
+                break;
             }
-        case IR_ADD:{
-            fprintf(file, "%s := %s + %s", Operand(code->dst), Operand(code->src1), Operand(code->src2));
-            break;
+            case IR_FUNCTION:{
+                fprintf(file, "FUNCTION %s :", Operand(code->src));
+                break;
+            }       
+            case IR_ASSIGN:{
+                fprintf(file, "%s := %s", Operand(code->dst), Operand(code->src));
+                break;
+                }
+            case IR_ADD:{
+                fprintf(file, "%s := %s + %s", Operand(code->dst), Operand(code->src1), Operand(code->src2));
+                break;
+            }
+            case IR_SUB:{
+                fprintf(file, "%s := %s - %s", Operand(code->dst), Operand(code->src1), Operand(code->src2));
+                break;
+            }
+            case IR_MUL:{
+                fprintf(file, "%s := %s * %s", Operand(code->dst), Operand(code->src1), Operand(code->src2));
+                break;
+            }
+            case IR_DIV:{
+                fprintf(file, "%s := %s / %s", Operand(code->dst), Operand(code->src1), Operand(code->src2));
+                break;
+            }
+            case IR_GOTO:{
+                fprintf(file, "GOTO %s", Operand(code->src));
+                break;
+            }
+            case IR_IF_GOTO:{
+                fprintf(file, "IF %s %s %s GOTO %s", Operand(code->src1),RELOP[code->relop], Operand(code->src2), Operand(code->dst));
+                break;
+            }
+            case IR_RETURN:{
+                fprintf(file, "RETURN %s", Operand(code->src));
+                break;
+            }
+            case IR_DEC:{
+                fprintf(file, "DEC %s %d", Operand(code->src), code->declared_size);
+                break;
+            }
+            case IR_ARG:{
+                fprintf(file, "ARG %s", Operand(code->src));
+                break;
+            }
+            case IR_CALL:{
+                fprintf(file, "%s := CALL %s", Operand(code->rtn), Operand(code->func));
+                break;
+            }
+            case IR_PARAM:{
+                fprintf(file, "PARAM %s", Operand(code->src));
+                break;
+            }
+            case IR_READ:{
+                fprintf(file, "READ %s", Operand(code->src));
+                break;
+            }
+            case IR_WRITE:{
+                fprintf(file, "WRITE %s", Operand(code->src));
+                break;
+            }
+            default: assert(false);
         }
-        case IR_SUB:{
-            fprintf(file, "%s := %s - %s", Operand(code->dst), Operand(code->src1), Operand(code->src2));
-            break;
-        }
-        case IR_MUL:{
-            fprintf(file, "%s := %s * %s", Operand(code->dst), Operand(code->src1), Operand(code->src2));
-            break;
-        }
-        case IR_DIV:{
-            fprintf(file, "%s := %s / %s", Operand(code->dst), Operand(code->src1), Operand(code->src2));
-            break;
-        }
-        case IR_GOTO:{
-            fprintf(file, "GOTO %s", Operand(code->src));
-            break;
-        }
-        case IR_IF_GOTO:{
-            fprintf(file, "IF %s %s %s GOTO %s", Operand(code->src1),RELOP[code->relop], Operand(code->src2), Operand(code->dst));
-            break;
-        }
-        case IR_RETURN:{
-            fprintf(file, "RETURN %s", Operand(code->src));
-            break;
-        }
-        case IR_DEC:{
-            fprintf(file, "DEC %s %d", Operand(code->src), code->declared_size);
-            break;
-        }
-        case IR_ARG:{
-            fprintf(file, "ARG %s", Operand(code->src));
-            break;
-        }
-        case IR_CALL:{
-            fprintf(file, "%s := CALL %s", Operand(code->rtn), Operand(code->func));
-            break;
-        }
-        case IR_PARAM:{
-            fprintf(file, "PARAM %s", Operand(code->src));
-            break;
-        }
-        case IR_READ:{
-            fprintf(file, "READ %s", Operand(code->src));
-            break;
-        }
-        case IR_WRITE:{
-            fprintf(file, "WRITE %s", Operand(code->src));
-            break;
-        }
-        default: assert(false);
+        fprintf(file, "\n");
     }
-    
-    fprintf(file, "\n");
+    else{
+        switch(code->kind) {
+            case IR_LABEL:{
+                printf("LABEL %s :", Operand(code->src));
+                break;
+            }
+            case IR_FUNCTION:{
+                printf("FUNCTION %s :", Operand(code->src));
+                break;
+            }       
+            case IR_ASSIGN:{
+                printf("%s := %s", Operand(code->dst), Operand(code->src));
+                break;
+                }
+            case IR_ADD:{
+                printf("%s := %s + %s", Operand(code->dst), Operand(code->src1), Operand(code->src2));
+                break;
+            }
+            case IR_SUB:{
+                printf("%s := %s - %s", Operand(code->dst), Operand(code->src1), Operand(code->src2));
+                break;
+            }
+            case IR_MUL:{
+                printf("%s := %s * %s", Operand(code->dst), Operand(code->src1), Operand(code->src2));
+                break;
+            }
+            case IR_DIV:{
+                printf("%s := %s / %s", Operand(code->dst), Operand(code->src1), Operand(code->src2));
+                break;
+            }
+            case IR_GOTO:{
+                printf("GOTO %s", Operand(code->src));
+                break;
+            }
+            case IR_IF_GOTO:{
+                printf("IF %s %s %s GOTO %s", Operand(code->src1),RELOP[code->relop], Operand(code->src2), Operand(code->dst));
+                break;
+            }
+            case IR_RETURN:{
+                printf("RETURN %s", Operand(code->src));
+                break;
+            }
+            case IR_DEC:{
+                printf("DEC %s %d", Operand(code->src), code->declared_size);
+                break;
+            }
+            case IR_ARG:{
+                printf("ARG %s", Operand(code->src));
+                break;
+            }
+            case IR_CALL:{
+                printf("%s := CALL %s", Operand(code->rtn), Operand(code->func));
+                break;
+            }
+            case IR_PARAM:{
+                printf("PARAM %s", Operand(code->src));
+                break;
+            }
+            case IR_READ:{
+                printf("READ %s", Operand(code->src));
+                break;
+            }
+            case IR_WRITE:{
+                printf("WRITE %s", Operand(code->src));
+                break;
+            }
+            default: assert(false);
+        }
+        printf("\n");
+    }
 }
 
 /* Output IR_list */
