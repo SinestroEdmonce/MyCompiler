@@ -217,6 +217,40 @@ FuncArgsList* Translate_DFS_Args(TreeNode* cur_root){
     return args_list;
 }
 
+/* Obtain the RELOP type from the expression */
+RELOP_TYPE Get_Relop(TreeNode* tree_node, bool flag){
+    asssert(strcmp(tree_node->type, "RELOP") == 0);
+
+    if (flag == true){
+        if (strcmp(tree_node->value, "==") == 0)
+            return RELOP_EQ;
+        if (strcmp(tree_node->value, "!=") == 0)
+            return RELOP_NEQ;
+        if (strcmp(tree_node->value, ">=") == 0)
+            return RELOP_GE;
+        if (strcmp(tree_node->value, "<=") == 0)
+            return RELOP_LE;
+        if (strcmp(tree_node->value, "<") == 0)
+            return RELOP_L;
+        if (strcmp(tree_node->value, ">") == 0)
+            return RELOP_G;
+    }
+    else{
+        if (strcmp(tree_node->value, "==") == 0)
+            return RELOP_NEQ;
+        if (strcmp(tree_node->value, "!=") == 0)
+            return RELOP_EQ;
+        if (strcmp(tree_node->value, ">=") == 0)
+            return RELOP_LE;
+        if (strcmp(tree_node->value, "<=") == 0)
+            return RELOP_GE;
+        if (strcmp(tree_node->value, "<") == 0)
+            return RELOP_G;
+        if (strcmp(tree_node->value, ">") == 0)
+            return RELOP_L;
+    }
+}
+
 /* A deepth-first traversal for the Exp branch, only aiming at LEFT_VALUE branch */
 Type* Translate_DFS_Expression_Address(TreeNode* cur_root, IROperand* operand){
     assert(strcmp(cur_root->type, "Exp") == 0);
@@ -227,6 +261,94 @@ Type* Translate_DFS_Expression_Address(TreeNode* cur_root, IROperand* operand){
 Type* Translate_DFS_Expression_Condition(TreeNode* cur_root, IROperand* label_true, IROperand* label_false){
     assert(strcmp(cur_root->type, "Exp") == 0);
     
+    if (CHILD(cur_root, 3)!=NULL && strcmp(CHILD(cur_root, 1)->type, "RELOP") == 0){
+        IROperand* t1 = New_Temp_Var();
+        IROperand* t2 = New_Temp_Var();
+
+        Type* expr1 = Translate_DFS_Expression(CHILD(cur_root, 1), t1);
+        t1 = Clean_IR_Temp_Var(t1);
+        Type* expr2 = Translate_DFS_Expression(CHILD(cur_root, 3), t2);
+        t2 = Clean_IR_Temp_Var(t2);
+
+        if (expr1 == NULL || expr2 == NULL)
+            return NULL;
+        if (label_true != NULL && label_false != NULL){
+            Gen_3_Operands_Code(IR_IF_GOTO, label_false, t1, t2, Get_Relop(CHILD(cur_root, 2), true));
+            Gen_1_Operands_Code(IR_GOTO, label_false);
+        }
+        else if (label_true != NULL){
+            Gen_3_Operands_Code(IR_IF_GOTO, label_true, t1, t2, Get_Relop(CHILD(cur_root, 2), true));
+        }
+        else if (label_false != NULL){
+            Gen_3_Operands_Code(IR_IF_GOTO, label_false, t1, t2, Get_Relop(CHILD(cur_root, 2), false));
+        }
+        return expr1;
+    }
+    else if (CHILD(cur_root, 3)!=NULL && strcmp(CHILD(cur_root, 2)->type, "AND") == 0){
+        Type* expr1 = NULL;
+        Type* expr2 = NULL;
+
+        if (label_false!=NULL){
+            expr1 = Translate_DFS_Expression_Condition(CHILD(cur_root, 1), NULL, label_false);
+            expr2 = Translate_DFS_Expression_Condition(CHILD(cur_root, 3), label_true, label_false);
+        }
+        else{
+            IROperand* label1 = New_Label();
+            expr1 = Translate_DFS_Expression_Condition(CHILD(cur_root, 1), NULL, label1);
+            expr2 = Translate_DFS_Expression_Condition(CHILD(cur_root, 3), label_true, label_false);
+            Gen_1_Operands_Code(IR_LABEL, label1);
+        }
+        if (expr1 == NULL || expr2 == NULL)
+            return NULL;
+        
+        return expr1;
+    }
+    else if (CHILD(cur_root, 3)!=NULL && strcmp(CHILD(cur_root, 2)->type, "OR") == 0){
+        Type* expr1 = NULL;
+        Type* expr2 = NULL;
+
+        if (label_true!=NULL){
+            expr1 = Translate_DFS_Expression_Condition(CHILD(cur_root, 1), label_true, NULL);
+            expr2 = Translate_DFS_Expression_Condition(CHILD(cur_root, 3), label_true, label_false);
+        }
+        else{
+            IROperand* label1 = New_Label();
+            expr1 = Translate_DFS_Expression_Condition(CHILD(cur_root, 1), label1, NULL);
+            expr2 = Translate_DFS_Expression_Condition(CHILD(cur_root, 3), label_true, label_false);
+            Gen_1_Operands_Code(IR_LABEL, label1);
+        }
+        if (expr1 == NULL || expr2 == NULL)
+            return NULL;
+        
+        return expr1;
+    }
+    else if (CHILD(cur_root, 3) == NULL && strcmp(CHILD(cur_root, 1)->type, "NOT") == 0){
+        Type* exp_type = Translate_DFS_Expression_Condition(CHILD(cur_root, 2), label_false, label_true);
+
+        if (exp_type == NULL) 
+            return NULL;
+        
+        return exp_type;
+    }
+    else{
+        IROperand* t1 = New_Temp_Var();
+        Type* exp_type = Translate_DFS_Expression(cur_root, t1);
+        t1 = Clean_IR_Temp_Var(t1);
+        IROperand* imme_zero = New_Immediate(0);
+
+        if (label_true != NULL & label_false != NULL){
+            Gen_3_Operands_Code(IR_IF_GOTO, label_true, t1, &imme_zero, RELOP_NEQ);
+            Gen_1_Operands_Code(IR_GOTO, label_false);
+        }
+        else if (label_false != NULL){
+            Gen_3_Operands_Code(IR_IF_GOTO, label_false, t1, &imme_zero, RELOP_EQ);
+        }
+        else if (label_true != NULL){
+            Gen_3_Operands_Code(IR_IF_GOTO, label_true, t1, &imme_zero, RELOP_NEQ);
+        }
+        return exp_type;
+    }
+    assert(false);
 }
 
 /* A deepth-first traversal for the Exp branch */

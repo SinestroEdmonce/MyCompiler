@@ -90,6 +90,9 @@ void Translate_DFS_Stmt(TreeNode* cur_root);
 /* The function is used to obtain the memory size that the variable or the data type is going to occupy */
 int Get_Type_Size(Type* type); 
 
+/* Obtain the RELOP type from the expression */
+RELOP_TYPE Get_Relop(TreeNode* tree_node, bool flag);
+
 /* TODO: Deepth-first traversal for Exp branch, only aiming at CONDITION Expression */
 Type* Translate_DFS_Expression_Condition(TreeNode* cur_root, IROperand* label_true, IROperand* label_false);
 
