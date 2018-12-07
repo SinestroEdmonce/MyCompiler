@@ -104,36 +104,69 @@ bool Insert_Sibling(TreeNode* brother, TreeNode* young){
     return true;
 }
 
-bool Preorder_Traversal(TreeNode* cur_root, int layers){
-
-    if(cur_root!=NULL){
-        int idx;
-        for(idx = 0; idx < layers; idx++)
-            printf("  "); 
-        
-        /* Print syntax tree based on the requirements */
-        if(cur_root->is_non_ternmial==true)
-            printf("%s (%d)\n", cur_root->type, cur_root->linenum);
-        else{
-            if(strcmp(cur_root->type, "INT")==0 || strcmp(cur_root->type, "FLOAT")==0 || strcmp(cur_root->type, "ID")==0){
-                if (cur_root->is_real_value == true){
-                    if (strcmp(cur_root->type, "INT")==0)
-                        printf("%s: %d\n", cur_root->type, cur_root->value_as_its_type.int_value);
+bool Preorder_Traversal(FILE* file, TreeNode* cur_root, int layers){
+    if(file == NULL){
+        if(cur_root!=NULL){
+            int idx;
+            for(idx = 0; idx < layers; idx++)
+                printf("  "); 
+            
+            /* Print syntax tree based on the requirements */
+            if(cur_root->is_non_ternmial==true)
+                printf("%s (%d)\n", cur_root->type, cur_root->linenum);
+            else{
+                if(strcmp(cur_root->type, "INT")==0 || strcmp(cur_root->type, "FLOAT")==0 || strcmp(cur_root->type, "ID")==0){
+                    if (cur_root->is_real_value == true){
+                        if (strcmp(cur_root->type, "INT")==0)
+                            printf("%s: %d\n", cur_root->type, cur_root->value_as_its_type.int_value);
+                        else
+                            printf("%s: %f\n", cur_root->type, cur_root->value_as_its_type.double_value);
+                    }
                     else
-                        printf("%s: %f\n", cur_root->type, cur_root->value_as_its_type.double_value);
+                        printf("%s: %s\n", cur_root->type, cur_root->value);
                 }
                 else
-                    printf("%s: %s\n", cur_root->type, cur_root->value);
+                    printf("%s\n", cur_root->type);
             }
-            else
-                printf("%s\n", cur_root->type);
-        }
+                
             
-        
-        TreeNode *tmp = cur_root->child;
-        while(tmp!=NULL){
-            Preorder_Traversal(tmp, layers+1);
-            tmp = tmp->sibling;
+            TreeNode *tmp = cur_root->child;
+            while(tmp!=NULL){
+                Preorder_Traversal(file, tmp, layers+1);
+                tmp = tmp->sibling;
+            }
+        }
+    }
+    else{
+        if(cur_root!=NULL){
+            int idx;
+            for(idx = 0; idx < layers; idx++)
+                fprintf(file, "  "); 
+            
+            /* Print syntax tree based on the requirements */
+            if(cur_root->is_non_ternmial==true)
+                fprintf(file, "%s (%d)\n", cur_root->type, cur_root->linenum);
+            else{
+                if(strcmp(cur_root->type, "INT")==0 || strcmp(cur_root->type, "FLOAT")==0 || strcmp(cur_root->type, "ID")==0){
+                    if (cur_root->is_real_value == true){
+                        if (strcmp(cur_root->type, "INT")==0)
+                            fprintf(file, "%s: %d\n", cur_root->type, cur_root->value_as_its_type.int_value);
+                        else
+                            fprintf(file, "%s: %f\n", cur_root->type, cur_root->value_as_its_type.double_value);
+                    }
+                    else
+                        fprintf(file, "%s: %s\n", cur_root->type, cur_root->value);
+                }
+                else
+                    fprintf(file, "%s\n", cur_root->type);
+            }
+                
+            
+            TreeNode *tmp = cur_root->child;
+            while(tmp!=NULL){
+                Preorder_Traversal(file, tmp, layers+1);
+                tmp = tmp->sibling;
+            }
         }
     }
 }

@@ -51,7 +51,7 @@ TreeNode* Get_First_Sibling(TreeNode* brother);
 TreeNode* Get_Nth_Child(TreeNode* parent, int num);
 bool Insert_Child(TreeNode* parent, TreeNode* child);
 bool Insert_Sibling(TreeNode* brother, TreeNode* young);
-bool Preorder_Traversal(TreeNode* cur_root, int layers);
+bool Preorder_Traversal(FILE* file, TreeNode* cur_root, int layers);
 
 
 #endif
