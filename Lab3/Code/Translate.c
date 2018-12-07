@@ -255,6 +255,87 @@ RELOP_TYPE Get_Relop(TreeNode* tree_node, bool flag){
 Type* Translate_DFS_Expression_Address(TreeNode* cur_root, IROperand* operand){
     assert(strcmp(cur_root->type, "Exp") == 0);
 
+    if (strcmp(CHILD(cur_root, 1)->type, "ID") == 0){
+        if (CHILD(cur_root, 2)!=NULL)
+            return NULL;
+        
+        char* symbol_id = Translate_DFS_Id(CHILD(cur_root, 1));
+        SymbolRecord* symbol = Find_Var_Func_Symbol(symbol_id);
+
+        IROperand* t1 = symbol->operand;
+        IROperand* t2 = Modify_Operator(t1, OP_MDF_FETCH_ADDR);
+        if (operand!=NULL)
+            Gen_2_Operands_Code(IR_ASSIGN, operand, t2, -1);
+        return symbol->symbol_type;
+    }
+    else if (strcmp(CHILD(cur_root, 1)->type, "LP") == 0)
+        return Translate_DFS_Expression_Address(CHILD(cur_root, 2), operand);
+    else if (strcmp(CHILD(cur_root, 1)->type, "Exp") == 0){
+        if(strcmp(CHILD(cur_root, 2)->type, "LB") == 0){
+            IROperand* t1 = New_Temp_Var();
+            Type* expr1 = Translate_DFS_Expression_Address(CHILD(cur_root, 1), t1);
+            t1 = Clean_IR_Temp_Var(t1);
+
+            IROperand* t2 = New_Temp_Var();
+            Type* expr2 = Translate_DFS_Expression(CHILD(cur_root, 3), t2);
+            t2 = Clean_IR_Temp_Var(t2);
+
+            Type* type_temp = malloc(sizeof(Type));
+            *type_temp = *expr1;
+            type_temp->array.array_size = type_temp->array.array_size->next;
+            if (type_temp->array.array_size==NULL){
+                Type* temp = type_temp;
+                type_temp = type_temp->array.elem;
+                free(temp);
+
+                if (t2->kind == OP_IMMEDIATE){
+                    IROperand* t3 = New_Immediate(4*t2->value_int);
+                    if (operand!=NULL)
+                        Gen_3_Operands_Code(IR_ADD, operand, t1, t3, NONE_TYPE);
+                }
+                else{
+                    IROperand* t3 = New_Temp_Var();
+                    IROperand* imme_four = New_Immediate(4);
+                    Gen_3_Operands_Code(IR_MUL, t3, t2, &imme_four, NONE_TYPE);
+                    t3 = Clean_IR_Temp_Var(t3);
+                    if (operand!=NULL)
+                        Gen_3_Operands_Code(IR_ADD, operand, t1, t3, NONE_TYPE);
+                }
+            }
+            else{
+                int dimension_size = 4;
+                ArraySizeList* pt = type_temp->array.array_size;
+                while (pt!=NULL){
+                    dimension_size = dimension_size*(pt->size);
+                    pt = pt->next;
+                }
+                IROperand* t3 = New_Temp_Var();
+                IROperand* t4 = New_Immediate(dimension_size);
+                Gen_3_Operands_Code(IR_MUL, t3, t2, t4, NONE_TYPE);
+                t3 = Clean_IR_Temp_Var(t3);
+                if (operand!=NULL)
+                    Gen_3_Operands_Code(IR_ADD, operand, t3, t1, NONE_TYPE);
+            }
+        }
+        else if (strcmp(CHILD(cur_root, 2)->type, "DOT") == 0){
+            IROperand* t1 = New_Temp_Var();
+            Type* expr1 = Translate_DFS_Expression_Address(CHILD(cur_root, 1), t1);
+            t1 = Clean_IR_Temp_Var(t1);
+
+            if (expr1 == NULL) 
+                return NULL;
+            
+            char* symbol_id = Translate_DFS_Id(CHILD(cur_root, 3));
+            Type* field = Get_Field_Type(expr1->structure, symbol_id);
+            unsigned int offset= Get_Field_Offset(expr1->structure, symbol_id);
+
+            IROperand* t2 = New_Immediate(offset);
+            if (operand!=NULL)
+                Gen_3_Operands_Code(IR_ADD, operand, t1, t2, NONE_TYPE);
+            return field;
+        }
+    }
+    assert(false);
 }
 
 /* A deepth-first traversal for the Exp branch, only aiming at CONDITION branch */
@@ -580,6 +661,8 @@ Type* Translate_DFS_Var_Declared(TreeNode* cur_root, char **symbol_id, Type* typ
         next_node->size = CHILD(tree_node, 3)->value_as_its_type.int_value;
         next_node->next = head_node;
         next_node->prev = NULL;
+
+        head_node->prev = next_node;
         head_node = next_node;
         tree_node = CHILD(tree_node, 1);
     }

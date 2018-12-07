@@ -404,6 +404,8 @@ Type* Semantic_DFS_Var_Declared(TreeNode* cur_root, char **symbol_id, Type* type
         next_node->size = CHILD(tree_node, 3)->value_as_its_type.int_value;
         next_node->next = head_node;
         next_node->prev = NULL;
+
+        head_node->prev = next_node;
         head_node = next_node;
         tree_node = CHILD(tree_node, 1);
     }
