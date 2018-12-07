@@ -219,7 +219,7 @@ FuncArgsList* Translate_DFS_Args(TreeNode* cur_root){
 
 /* Obtain the RELOP type from the expression */
 RELOP_TYPE Get_Relop(TreeNode* tree_node, bool flag){
-    asssert(strcmp(tree_node->type, "RELOP") == 0);
+    assert(strcmp(tree_node->type, "RELOP") == 0);
 
     if (flag == true){
         if (strcmp(tree_node->value, "==") == 0)
@@ -310,7 +310,7 @@ Type* Translate_DFS_Expression_Address(TreeNode* cur_root, IROperand* operand){
                 else{
                     IROperand* t3 = New_Temp_Var();
                     IROperand* imme_four = New_Immediate(4);
-                    Gen_3_Operands_Code(IR_MUL, t3, t2, &imme_four, NONE_TYPE);
+                    Gen_3_Operands_Code(IR_MUL, t3, t2, imme_four, NONE_TYPE);
                     t3 = Clean_IR_Temp_Var(t3);
                     if (operand!=NULL)
                         Gen_3_Operands_Code(IR_ADD, operand, t1, t3, NONE_TYPE);
@@ -356,7 +356,7 @@ Type* Translate_DFS_Expression_Address(TreeNode* cur_root, IROperand* operand){
 Type* Translate_DFS_Expression_Condition(TreeNode* cur_root, IROperand* label_true, IROperand* label_false){
     assert(strcmp(cur_root->type, "Exp") == 0);
     
-    if (CHILD(cur_root, 3)!=NULL && strcmp(CHILD(cur_root, 1)->type, "RELOP") == 0){
+    if (CHILD(cur_root, 3)!=NULL && strcmp(CHILD(cur_root, 2)->type, "RELOP") == 0){
         IROperand* t1 = New_Temp_Var();
         IROperand* t2 = New_Temp_Var();
 
@@ -432,14 +432,14 @@ Type* Translate_DFS_Expression_Condition(TreeNode* cur_root, IROperand* label_tr
         IROperand* imme_zero = New_Immediate(0);
 
         if (label_true != NULL & label_false != NULL){
-            Gen_3_Operands_Code(IR_IF_GOTO, label_true, t1, &imme_zero, RELOP_NEQ);
+            Gen_3_Operands_Code(IR_IF_GOTO, label_true, t1, imme_zero, RELOP_NEQ);
             Gen_1_Operands_Code(IR_GOTO, label_false);
         }
         else if (label_false != NULL){
-            Gen_3_Operands_Code(IR_IF_GOTO, label_false, t1, &imme_zero, RELOP_EQ);
+            Gen_3_Operands_Code(IR_IF_GOTO, label_false, t1, imme_zero, RELOP_EQ);
         }
         else if (label_true != NULL){
-            Gen_3_Operands_Code(IR_IF_GOTO, label_true, t1, &imme_zero, RELOP_NEQ);
+            Gen_3_Operands_Code(IR_IF_GOTO, label_true, t1, imme_zero, RELOP_NEQ);
         }
         return exp_type;
     }
@@ -997,19 +997,19 @@ void Translate_DFS_Stmt(TreeNode* cur_root){
     //       WHILE LP Exp RP Stmt 
     assert(strcmp(cur_root->type, "Stmt") == 0);
 
-    if (strcmp(CHILD(cur_root,1)->type, "Exp") == 0){
+    if (strcmp(CHILD(cur_root, 1)->type, "Exp") == 0){
         Translate_DFS_Expression(CHILD(cur_root, 1), NULL);
         return;
     }
-    else if (strcmp(CHILD(cur_root,1)->type, "CompSt") == 0){
+    else if (strcmp(CHILD(cur_root, 1)->type, "CompSt") == 0){
         Push_Scope();
         Translate_DFS_CompSt(CHILD(cur_root, 1));
         Pop_Scope();
         return;
     }
-    else if (strcmp(CHILD(cur_root,1)->type, "RETURN") == 0){
+    else if (strcmp(CHILD(cur_root, 1)->type, "RETURN") == 0){
         IROperand* temp = New_Temp_Var();
-        Type* rtn_type = Translate_DFS_Expression(CHILD(cur_root, 1), temp);
+        Type* rtn_type = Translate_DFS_Expression(CHILD(cur_root, 2), temp);
         temp = Clean_IR_Temp_Var(temp);
 
         /* If the return value is a basic type, then immediately generate the new IR code.
