@@ -88,52 +88,76 @@ Args* Args_Parser(int argc, char** argv){
     return args;
 }
 
-int main(int argc, char** argv){
-    Args* args = Args_Parser(argc, argv);
+// int main(int argc, char** argv){
+//     Args* args = Args_Parser(argc, argv);
 
-    if(args != NULL){
-        FILE* file = fopen(args->in_file, "r");
-        /* Cannot open the file */
-        if(!file){
-            perror(args->in_file);
-            return 1;
-        }
+//     if(args != NULL){
+//         FILE* file = fopen(args->in_file, "r");
+//         /* Cannot open the file */
+//         if(!file){
+//             perror(args->in_file);
+//             return 1;
+//         }
 
-        yyrestart(file);
-        //yydebug=1;
-        yyparse();
-        fclose(file);
+//         yyrestart(file);
+//         //yydebug=1;
+//         yyparse();
+//         fclose(file);
 
-        /* If no errors, do different processes */
-        if(syn_error==false && lex_error==false){
-            if (args->mode.flag_print_syntax_tree)
-                Preorder_Traversal(root, 0);
-            if (args->mode.flag_only_semantic_check){
-                Semantic_Analysis();
-                Check_Declared_Func();
-            }
-            if (args->mode.flag_only_translate_ir_code){
-                Semantic_Analysis();
-                Check_Declared_Func();
-                if (semantic_errors == 0){
-                    Reset_All();   
-                    Translate_Analysis();
-                }
-            }
-            // if (args->mode.flag_generate_assembly_code){
-            //     Semantic_Analysis();
-            //     Check_Declared_Func();
-            //     if (semantic_errors == 0){
-            //         Reset_All();
-            //         Translate_Analysis();
-            //         /* TODO */
-            //     }
-            // }
-        }      
-        return 0;
+//         /* If no errors, do different processes */
+//         if(syn_error==false && lex_error==false){
+//             if (args->mode.flag_print_syntax_tree){
+//                 if (args->out_file != NULL){
+//                     FILE* out = fopen(args->out_file, "a+");
+//                     Preorder_Traversal(out, root, 0);
+//                     fclose(out);
+//                 }
+//                 else
+//                     Preorder_Traversal(NULL, root, 0);
+//             }
+//             if (args->mode.flag_only_semantic_check){
+//                 Semantic_Analysis();
+//                 Check_Declared_Func();
+//             }
+//             if (args->mode.flag_only_translate_ir_code){
+//                 Semantic_Analysis();
+//                 Check_Declared_Func();
+//                 if (semantic_errors == 0){
+//                     Reset_All();   
+//                     Translate_Analysis();
+//                     if (args->out_file != NULL){
+//                         FILE* out = fopen(args->out_file, "a+");
+//                         Print_IR_Code(out, ir_list_head);
+//                         fclose(out);
+//                     }
+//                     else
+//                         Print_IR_Code(NULL, ir_list_head);
+//                 }
+//             }
+//         }      
+//         return 0;
+//     }
+//     else{
+//         printf("Error: Parameters missing.\n");
+//         return -1;
+//     } 
+// }
+
+int main(){
+    
+    FILE* file = fopen("./Test/test1.txt", "r");
+
+    yyrestart(file);
+    //yydebug=1;
+    yyparse();
+    fclose(file);
+    Preorder_Traversal(NULL, root, 0);
+    Semantic_Analysis();
+    Check_Declared_Func();
+    if (semantic_errors == 0){
+        Reset_All();   
+        Translate_Analysis();
+        Print_IR_Code_List(NULL);
     }
-    else{
-        printf("Error: Parameters missing.\n");
-        return -1;
-    } 
+            
 }
