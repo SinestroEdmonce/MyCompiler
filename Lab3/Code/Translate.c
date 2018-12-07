@@ -241,13 +241,13 @@ RELOP_TYPE Get_Relop(TreeNode* tree_node, bool flag){
         if (strcmp(tree_node->value, "!=") == 0)
             return RELOP_EQ;
         if (strcmp(tree_node->value, ">=") == 0)
-            return RELOP_LE;
-        if (strcmp(tree_node->value, "<=") == 0)
-            return RELOP_GE;
-        if (strcmp(tree_node->value, "<") == 0)
-            return RELOP_G;
-        if (strcmp(tree_node->value, ">") == 0)
             return RELOP_L;
+        if (strcmp(tree_node->value, "<=") == 0)
+            return RELOP_G;
+        if (strcmp(tree_node->value, "<") == 0)
+            return RELOP_GE;
+        if (strcmp(tree_node->value, ">") == 0)
+            return RELOP_LE;
     }
 }
 
@@ -539,7 +539,7 @@ Type* Translate_DFS_Expression(TreeNode* cur_root, IROperand* operand){
             IROperand* t1 = New_Temp_Var();
             IROperand* t2 = New_Temp_Var();
 
-            Type* left_exp_type = Translate_DFS_Expression(CHILD(cur_root, 1), t1);
+            Type* left_exp_type = Translate_DFS_Expression_Address(CHILD(cur_root, 1), t1);
             t1 = Clean_IR_Temp_Var(t1);
             Type* right_exp_type = Translate_DFS_Expression(CHILD(cur_root, 3), t2);
             t2 = Clean_IR_Temp_Var(t2);
@@ -559,7 +559,7 @@ Type* Translate_DFS_Expression(TreeNode* cur_root, IROperand* operand){
         }
         else if (strcmp(CHILD(cur_root, 2)->type, "DOT") == 0){
             IROperand* t1 = New_Temp_Var();
-            Type* exp_type = Translate_DFS_Expression(CHILD(cur_root, 1), t1);
+            Type* exp_type = Translate_DFS_Expression_Address(cur_root, t1);
             t1 = Clean_IR_Temp_Var(t1);
 
             if (exp_type == NULL)
@@ -626,7 +626,7 @@ Type* Translate_DFS_Expression(TreeNode* cur_root, IROperand* operand){
                 Gen_1_Operands_Code(IR_READ, operand);
         }
         else if (strcmp(func_symbol->record_name, "write") == 0){
-            Gen_1_Operands_Code(IR_READ, args_list->operand);
+            Gen_1_Operands_Code(IR_WRITE, args_list->operand);
         } 
         else{
             Gen_IR_Args(args_list);

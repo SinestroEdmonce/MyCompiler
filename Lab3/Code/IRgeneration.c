@@ -317,7 +317,7 @@ void Print_IR_Code(FILE* file, IRCode* code){
                 break;
             }       
             case IR_ASSIGN:{
-                fprintf(file, "%s := %s", Operand(code->dst), Operand(code->src));
+                fprintf(file, "%s := %s", Operand(code->dst), Operand(code->merged_src));
                 break;
                 }
             case IR_ADD:{
@@ -387,7 +387,7 @@ void Print_IR_Code(FILE* file, IRCode* code){
                 break;
             }       
             case IR_ASSIGN:{
-                printf("%s := %s", Operand(code->dst), Operand(code->src));
+                printf("%s := %s", Operand(code->dst), Operand(code->merged_src));
                 break;
                 }
             case IR_ADD:{
@@ -511,7 +511,7 @@ void Gen_2_Operands_Code(IR_TYPE ir_type, IROperand* dst, IROperand* src, int si
         }
         case IR_ASSIGN:{
             new_ir_code->dst = dst;
-            new_ir_code->src = src;
+            new_ir_code->merged_src = src;
             break;
         }
         case IR_CALL:{
