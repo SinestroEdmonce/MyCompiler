@@ -116,10 +116,12 @@ int main(int argc, char** argv){
                     Preorder_Traversal(NULL, root, 0);
             }
             if (args->mode.flag_only_semantic_check){
+                semantic_errors = 0;
                 Semantic_Analysis();
                 Check_Declared_Func();
             }
             if (args->mode.flag_only_translate_ir_code){
+                semantic_errors = 0;
                 Semantic_Analysis();
                 Check_Declared_Func();
                 if (semantic_errors == 0){
