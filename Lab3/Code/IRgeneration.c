@@ -204,11 +204,11 @@ IRCode* Insert_IR_Code_After(IRCode* place, IRCode* code){
 }
 
 IROperand* Clean_IR_Temp_Var(IROperand* temp_operand){
-    assert(temp_operand->kind == OP_TEMP_VAR);
+    // assert(temp_operand->kind == OP_TEMP_VAR);
 
-    if (ir_list_tail->kind == IR_ASSIGN && ir_list_tail->dst == temp_operand){
-        /* TODO */
-    }
+    // if (ir_list_tail->kind == IR_ASSIGN && ir_list_tail->dst == temp_operand){
+    //     /* TODO */
+    // }
 
     return temp_operand;
 }
@@ -277,7 +277,7 @@ void Add_IR_Code(IRCode* code){
         
         code = malloc(sizeof(IRCode));
         code->kind = IR_ASSIGN;
-        code->src = optimized_src;
+        code->merged_src = optimized_src;
         code->dst = tmp->dst;
         
         free(tmp);
@@ -295,9 +295,9 @@ void Add_IR_Code(IRCode* code){
 }
 
 void Clean_IR_Assign(){
-    assert(ir_list_tail->kind == IR_ASSIGN && ir_list_tail->prev != NULL);
+    // assert(ir_list_tail->kind == IR_ASSIGN && ir_list_tail->prev != NULL);
 
-    /* TODO */
+    // /* TODO */
 }
 
 char* Operand(IROperand* operand){
@@ -508,6 +508,7 @@ void Gen_2_Operands_Code(IR_TYPE ir_type, IROperand* dst, IROperand* src, int si
         case IR_DEC:{
             new_ir_code->declared_size = size;
             new_ir_code->src = src;
+            break;
         }
         case IR_ASSIGN:{
             new_ir_code->dst = dst;

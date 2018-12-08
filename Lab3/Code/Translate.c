@@ -330,6 +330,7 @@ Type* Translate_DFS_Expression_Address(TreeNode* cur_root, IROperand* operand){
                 if (operand!=NULL)
                     Gen_3_Operands_Code(IR_ADD, operand, t3, t1, NONE_TYPE);
             }
+            return type_temp;
         }
         else if (strcmp(CHILD(cur_root, 2)->type, "DOT") == 0){
             IROperand* t1 = New_Temp_Var();
