@@ -4,4 +4,6 @@
 
 - A virutal machine environment for a simulator to run. 
 
-## Usage(TODO)
+## Usage
+
+- Refer to ``Appendix_B.pdf`` for details.
