@@ -53,6 +53,7 @@ Args* Args_Parser(int argc, char** argv){
         printf("     -dag  enable dag optimizing\n");
         printf("      -ir  only process generating IR code\n");
         printf("       -a  process generating assembly code\n");
+        printf("   result  the folder that stores results\n");
         printf("Copyright: Qiaoyi Yin @NJU\n");
         return NULL;
     }
