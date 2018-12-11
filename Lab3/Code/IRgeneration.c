@@ -203,12 +203,21 @@ IRCode* Insert_IR_Code_After(IRCode* place, IRCode* code){
     return code;
 }
 
+/* Clean up some unnecessary temporary variable */
 IROperand* Clean_IR_Temp_Var(IROperand* temp_operand){
-    // assert(temp_operand->kind == OP_TEMP_VAR);
+    assert(temp_operand->kind == OP_TEMP_VAR);
 
-    // if (ir_list_tail->kind == IR_ASSIGN && ir_list_tail->dst == temp_operand){
-    //     /* TODO */
-    // }
+    if (ir_list_tail->kind == IR_ASSIGN && ir_list_tail->dst == temp_operand){
+        free(temp_operand);
+        IRCode* pt = ir_list_tail;
+        IROperand* rtn = pt->merged_src;
+
+        ir_list_tail = ir_list_tail->prev;
+        ir_list_tail->next = NULL;
+        free(pt);
+        
+        return rtn;
+    }
 
     return temp_operand;
 }
