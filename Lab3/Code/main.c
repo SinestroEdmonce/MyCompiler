@@ -137,6 +137,13 @@ int main(int argc, char** argv){
                         Print_IR_Code_List(NULL);
                 }
             }
+            if (args->mode.flag_generate_assembly_code){
+                semantic_errors = 0;
+                Semantic_Analysis();
+                Check_Declared_Func();
+                
+                printf("Error: Assembly Code Generation has not been completed yet.");
+            }
         }      
         return 0;
     }
