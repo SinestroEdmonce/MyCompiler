@@ -1,24 +1,25 @@
 #ifndef __DAGOPTIMIZATION_H__
 #define __DAGOPTIMIZATION_H__
 
+#include "IRgeneration.h"
 
-struct dag_node {
-    struct ir_operand *op;
-    enum ir_type type;
-    struct dag_node_list *parent_left, *parent_right, *parent_assign;
-};
+typedef struct DAG_Node_{
+    IROperand* operand;
+    IR_TYPE ir_type;
+    struct DAG_NodeList_ *parent_left, *parent_right, *parent_assign;    
+} DAG_Node;
 
-struct dag_node_list {
-    struct dag_node *node;
-    struct dag_node_list *next;
-};
+typedef struct DAG_NodeList_{
+    struct DAG_Node_* dag_node;
+    struct DAG_NodeList_* next;
+} DAG_NodeList;
 
-struct map_operand_node {
-    struct ir_operand *op;
-    struct dag_node *node;
-    struct map_operand_node *next;
-};
+typedef struct OperandNodeMap_{
+    IROperand* operand;
+    struct DAG_Node_* dag_node;
+    struct OperandNodeMap_* next;
+} OperandNodeMap;
 
-void block_optimize();
+void DAG_Optimization();
 
 #endif
