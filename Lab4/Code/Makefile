@@ -1,12 +1,12 @@
 parser:
 	bison -d syntax.y
 	flex lexical.l
-	gcc main.c syntax.tab.c Common.c SyntaxTree.c ErrorReport.c IRgeneration.c SymbolType.c SymbolTable.c Semantic.c Translate.c -lfl -ly -g -o ./../parser
+	gcc main.c syntax.tab.c Common.c SyntaxTree.c ErrorReport.c IRgeneration.c SymbolType.c SymbolTable.c Semantic.c DAGoptimization.c Translate.c MIPS_ASMgeneration.c -lfl -ly -g -o ./../parser
 
 debug:
 	bison -d -t -v syntax.y
 	flex lexical.l
-	gcc main.c syntax.tab.c Common.c SyntaxTree.c ErrorReport.c IRgeneration.c SymbolType.c SymbolTable.c Semantic.c Translate.c -lfl -ly -g -o ./../parser
+	gcc main.c syntax.tab.c Common.c SyntaxTree.c ErrorReport.c IRgeneration.c SymbolType.c SymbolTable.c Semantic.c DAGoptimization.c Translate.c MIPS_ASMgeneration.c -lfl -ly -g -o ./../parser
 
 lexical:
 	flex lexical.l
