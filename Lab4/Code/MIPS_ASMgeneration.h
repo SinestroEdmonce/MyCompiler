@@ -62,7 +62,7 @@ typedef struct MIPS_INSTR_ {
         };
 
         MIPS_OP* operand;
-        char *label;
+        char* label;
     };
 
     struct MIPS_INSTR_ *prev, *next;
@@ -77,5 +77,13 @@ MIPS_OP* reg_operand[32];
 MIPS_OP* Gen_MIPS_Label_Operand(MIPS_OP_TYPE op_type, char* label_name);
 MIPS_OP* Gen_MIPS_Imm_Operand(MIPS_OP_TYPE op_type, int value);
 MIPS_OP* Gen_MIPS_Reg_Addr_Operand(MIPS_OP_TYPE op_type, MIPS_REG reg, int offset);
+
+/* Generate different types of MIPS instructions */
+MIPS_INSTR* Gen_MIPS_1_Op_Instr(MIPS_INSTR_TYPE instr_type, MIPS_OP* operand);
+MIPS_INSTR* Gen_MIPS_1_Label_Instr(MIPS_INSTR_TYPE instr_type, char* label_name);
+MIPS_INSTR* Gen_MIPS_3_Op_Instr(MIPS_INSTR_TYPE instr_type, MIPS_OP* op1, MIPS_OP* op2, MIPS_OP* op3);
+
+/* Output the assembly code to the file */
+void Print_MIPS_ASM(FILE* file, MIPS_INSTR* instr);
 
 #endif

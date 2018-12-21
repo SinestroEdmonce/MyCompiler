@@ -6,7 +6,7 @@ static int callee_args_num=0;
 static char buffer[128];
 
 /* Common contents of the header in .asm files */
-char* common_MIPS_header = ".data\n\
+const char* MIPS_common_header = ".data\n\
 _prompt: .asciiz \"Enter an integer:\"\n\
 _ret: .asciiz \"\\n\"\n\
 .globl main\n\
@@ -28,6 +28,28 @@ syscall\n\
 move $v0, $0\n\
 jr $ra\n\
 \n";
+
+/* MIPS instructions in format of string */
+const char* MIPS_instr[] = {
+    NULL, "li", "la", "move", "add", "addi", "sub", "mul", "div",
+    "mflo", "lw", "sw", "j", "jal", "jr", "beq", "bne", "bgt",
+    "blt", "bge", "ble"
+};
+
+const char* MIPS_reg_name[] = {
+    "$zero",
+    "$at",
+    "$v0", "$v1",
+    "$a0", "$a1", "$a2", "$a3",
+    "$t0", "$t1", "$t2", "$t3", "$t4", "$t5", "$t6", "$t7",
+    "$s0", "$s1", "$s2", "$s3", "$s4", "$s5", "$s6", "$s7",
+    "$t8", "$t9",
+    "$k0", "$k1",
+    "$gp",
+    "$sp",
+    "$fp",
+    "$ra"
+};
 
 /* Generate different types of MIPS operands */
 MIPS_OP* Gen_MIPS_Label_Operand(MIPS_OP_TYPE op_type, char* label_name){
@@ -61,6 +83,35 @@ MIPS_OP* Gen_MIPS_Reg_Addr_Operand(MIPS_OP_TYPE op_type, MIPS_REG reg, int offse
     return new_MIPS_op;
 }
 
+/* Generate different types of MIPS instructions */
+MIPS_INSTR* Gen_MIPS_1_Op_Instr(MIPS_INSTR_TYPE instr_type, MIPS_OP* operand){
+    MIPS_INSTR* new_MIPS_instr = malloc(sizeof(MIPS_INSTR));
+    new_MIPS_instr->kind = instr_type;
+    new_MIPS_instr->operand = operand;
+    
+    return new_MIPS_instr;
+}
+
+MIPS_INSTR* Gen_MIPS_1_Label_Instr(MIPS_INSTR_TYPE instr_type, char* label_name){
+    MIPS_INSTR* new_MIPS_instr = malloc(sizeof(MIPS_INSTR));
+    new_MIPS_instr->kind = instr_type;
+    new_MIPS_instr->label = label_name;
+
+    return new_MIPS_instr;
+}
+
+MIPS_INSTR* Gen_MIPS_3_Op_Instr(MIPS_INSTR_TYPE instr_type, MIPS_OP* op1, MIPS_OP* op2, MIPS_OP* op3){
+    MIPS_INSTR* new_MIPS_instr = malloc(sizeof(MIPS_INSTR));
+
+    new_MIPS_instr->kind = instr_type;
+    new_MIPS_instr->op1 = op1;
+    new_MIPS_instr->op2 = op2;
+    new_MIPS_instr->op3 = op3;
+
+    return new_MIPS_instr;
+}
+
+/* Link new instruction node to the end of the MIPS_Instr list */
 MIPS_INSTR* Add_MIPS_Instr(MIPS_INSTR* instr){
     if (asm_list_head!=NULL){
         instr->next = instr->prev = NULL;
@@ -74,8 +125,9 @@ MIPS_INSTR* Add_MIPS_Instr(MIPS_INSTR* instr){
     return instr;
 }
 
+/* Generate the MIPS instructions and output to files */
 void Asm_MIPS_Generation(FILE *file){
-    fprintf(file, "%s", common_MIPS_header);
+    fprintf(file, "%s", MIPS_common_header);
 
     /* First generate the 0~31 register operands */
     int idx = 0;
@@ -83,36 +135,37 @@ void Asm_MIPS_Generation(FILE *file){
         reg_operand[idx] = Gen_MIPS_Reg_Addr_Operand(MIPS_OP_REG, (MIPS_REG)idx, -1);
     }
 
-    Asm_Func_Block_Generation(ir_list_head, ir_list_tail);
+    Asm_Func_Block_Split(ir_list_head, ir_list_tail);
     
-    for (struct mips_inst *p = asm_list; p != asm_list_tail->next; p = p->next) {
-        print_mips_inst(f, p);
+    for (MIPS_INSTR* pt = asm_list_head; pt!=asm_list_tail->next; pt=pt->next){
+        Print_MIPS_ASM(file, pt);
     }
 }
 
-void Asm_Func_Block_Generation(struct ir_code *head, struct ir_code *tail) {
-    assert(head && tail && head != tail);
-    struct ir_code *p = head->next;
-    struct ir_code *block_head = head;
-    while (p != tail) {
-        if (p->kind == IR_FUNCTION) {
-            asm_proc_function_block(block_head, p->prev);
-            block_head = p;
+/* Split the intermediate representation codes into parts, each of which begins with a function(IR_FUNCTION) */
+void Asm_Func_Block_Split(IRCode* ir_head, IRCode* ir_tail){
+    assert(ir_head != NULL && ir_tail != NULL && ir_head != ir_tail);
+    
+    IRCode* tmp = ir_head->next;
+    IRCode* func_block_head = ir_head;
+
+    while(tmp!=ir_tail){
+        if (tmp->kind == IR_FUNCTION){
+            Asm_Func_Block_Generation(func_block_head, tmp->prev);
+            func_block_head = tmp;
         }
-        p = p->next;
+        tmp = tmp->next;
     }
-    asm_proc_function_block(block_head, tail);
+    Asm_Func_Block_Generation(func_block_head, ir_tail);
 }
 
-void asm_proc_function_block(struct ir_code *head, struct ir_code *tail) {
-    //debug
-    printf(">>>>> ");
-    print_ir_code(stdout, head);
+/* Translate every part in intermediate representation codes as a complete function */
+void Asm_Func_Block_Generation(IRCode* ir_head, IRCode* ir_tail){
+    assert(ir_head != NULL && ir_tail != NULL && ir_head != ir_tail);
+    assert(ir_head->kind == IR_FUNCTION && frame == NULL);
+    
+    New_Stack_Frame();
 
-    assert(head && tail && head != tail);
-    assert(head->kind == IR_FUNCTION);
-    assert(frame == NULL);
-    new_frame();
     add_mips_inst(new_mips_inst(MIPS_LABEL, .label=head->op->name));
     // Generate prologue:
     // sw $fp, 0($sp)
@@ -314,28 +367,8 @@ void asm_proc_ir_code(struct ir_code *ir) {
     }
 }
 
-char *mips_inst_str[] = {
-    NULL, "li", "la", "move", "add", "addi", "sub", "mul", "div",
-    "mflo", "lw", "sw", "j", "jal", "jr", "beq", "bne", "bgt",
-    "blt", "bge", "ble"
-};
 
-char *reg_name[] = {
-    "$zero",
-    "$at",
-    "$v0", "$v1",
-    "$a0", "$a1", "$a2", "$a3",
-    "$t0", "$t1", "$t2", "$t3", "$t4", "$t5", "$t6", "$t7",
-    "$s0", "$s1", "$s2", "$s3", "$s4", "$s5", "$s6", "$s7",
-    "$t8", "$t9",
-    "$k0", "$k1",
-    "$gp",
-    "$sp",
-    "$fp",
-    "$ra"
-};
-
-void print_mips_inst(FILE* f, struct mips_inst *inst) {
+void Print_MIPS_ASM(FILE* file, MIPS_INSTR* instr){
     if (inst->kind == MIPS_LABEL) {
         fprintf(f, "%s:\n", inst->label);
         return;
