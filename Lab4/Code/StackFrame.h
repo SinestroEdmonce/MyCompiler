@@ -26,7 +26,7 @@ typedef struct Frame_Info_{
 Frame_Info* frame;
 
 Local_Var* Add_Local_Var(OP_TYPE op_type, int num){
-    assert(frame!=NULL);
+    assert(frame != NULL);
 
     Local_Var* lvar = malloc(sizeof(Local_Var));
     lvar->kind = op_type;
@@ -40,7 +40,7 @@ Local_Var* Add_Local_Var(OP_TYPE op_type, int num){
 }
 
 Local_Var* Add_Args_Var(OP_TYPE op_type, int num){
-    assert(frame!=NULL);
+    assert(frame != NULL);
 
     Local_Var* lvar = malloc(sizeof(Local_Var));
     lvar->kind = op_type;
@@ -54,7 +54,7 @@ Local_Var* Add_Args_Var(OP_TYPE op_type, int num){
 }
 
 Local_Var* Dec_Local_Var(OP_TYPE op_type, int num, int size){
-    assert(frame!=NULL);
+    assert(frame != NULL && size%4 == 0);
 
     Local_Var* lvar = malloc(sizeof(Local_Var));
     lvar->kind = op_type;

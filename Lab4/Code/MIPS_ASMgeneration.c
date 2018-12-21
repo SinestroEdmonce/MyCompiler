@@ -166,103 +166,118 @@ void Asm_Func_Block_Generation(IRCode* ir_head, IRCode* ir_tail){
     
     New_Stack_Frame();
 
-    add_mips_inst(new_mips_inst(MIPS_LABEL, .label=head->op->name));
-    // Generate prologue:
-    // sw $fp, 0($sp)
-    // sw $ra, -4($sp)
-    // move $fp, $sp
-    // addi $sp, $sp, -frame_size
-    struct mips_inst *inst;
-    add_mips_inst(new_mips_inst(MIPS_SW, .op1=reg_op[REG_FP], \
-                .op2 = new_mips_op(MIPS_OP_ADDR, .reg=REG_SP, .offset=0)));
-    add_mips_inst(new_mips_inst(MIPS_SW, .op1=reg_op[REG_RA], \
-                .op2 = new_mips_op(MIPS_OP_ADDR, .reg=REG_SP, .offset=-4)));
-    add_mips_inst(new_mips_inst(MIPS_MOVE, .op1=reg_op[REG_FP], .op2=reg_op[REG_SP]));
-    add_mips_inst(inst = new_mips_inst(MIPS_ADDI, .op1=reg_op[REG_SP], \
-                .op2=reg_op[REG_SP], .op3=new_mips_op(MIPS_OP_IMM)));
-    int *p_frame_size = {&inst->op3->value}; // wait to be filled
-    // put arguments in the frame variables table
-    struct ir_code *p = head->next;
-    while (p->kind == IR_PARAM) {
-        add_arg_var(p->op->kind, p->op->no);
-        p = p->next;
+    Add_MIPS_Instr(Gen_MIPS_1_Label_Instr(MIPS_LABEL, ir_head->src->var_func_name));
+
+    /* Generate prologue:
+     * sw $fp, 0($sp)
+     * sw $ra, -4($sp)
+     * move $fp, $sp
+     * addi $sp, $sp, -frame_size
+     */
+    MIPS_INSTR* instr;
+    Add_MIPS_Instr(Gen_MIPS_3_Op_Instr(MIPS_SW, reg_operand[REG_FP], \
+        Gen_MIPS_Reg_Addr_Operand(MIPS_OP_ADDR, REG_SP, 0), NULL));
+    Add_MIPS_Instr(Gen_MIPS_3_Op_Instr(MIPS_SW, reg_operand[REG_RA], \
+        Gen_MIPS_Reg_Addr_Operand(MIPS_OP_ADDR, REG_SP, -4), NULL));
+    Add_MIPS_Instr(Gen_MIPS_3_Op_Instr(MIPS_MOVE, reg_operand[REG_FP], reg_operand[REG_SP], NULL));
+    
+    /* frame_size will be back filled later */
+    instr = Gen_MIPS_3_Op_Instr(MIPS_ADDI, reg_operand[REG_SP], reg_operand[REG_SP], \
+        Gen_MIPS_Imm_Operand(MIPS_OP_IMM, -1));
+    Add_MIPS_Instr(instr);
+    int* frame_size = &(instr->op3->value);
+
+    /* Put arguments in the stack frame variables table */
+    IRCode* pt = ir_head->next;
+    while(pt->kind == IR_PARAM){
+        Add_Args_Var(pt->src->kind, pt->src->var_label_num);
+        pt = pt->next;
     }
-    // Process other code (cut them into basic blocks)
-    while (p != tail->next) {
-        switch (p->kind) {
-        case IR_FUNCTION:
-        case IR_PARAM:
-            assert(false);
-        default:
-            asm_proc_ir_code(p);
+    
+    /* Process other assembly codes (split them into blocks) */
+    while(pt != ir_tail->next){
+        switch(pt->kind){
+            case IR_FUNCTION: case IR_PARAM: assert(false);
+            default:{
+                Asm_Translatation(pt);
+                break;
+            }
         }
-        p = p->next;
+        pt = pt->next;
     }
-    // back fill
-    *p_frame_size = frame->var_offset;
-    release_frame();
+
+    /* Back fill the frame_size */
+    *frame_size = frame->var_offset;
+    Release_Frame();
 }
 
-void gen_mips_load(struct ir_operand *op, enum mips_reg reg) {
-    if (op->kind == OP_VARIABLE || op->kind == OP_TEMP_VAR) {
-        int offset = get_offset(op->kind, op->no);
-        if (op->modifier == OP_MDF_NONE) {
-            add_mips_inst(new_mips_inst(MIPS_LW, .op1=reg_op[reg], \
-                        .op2=new_mips_op(MIPS_OP_ADDR, .offset=offset, .reg=REG_FP)));
-        } else if (op->modifier == OP_MDF_AND) {
-            add_mips_inst(new_mips_inst(MIPS_LA, .op1=reg_op[reg], \
-                        .op2=new_mips_op(MIPS_OP_ADDR, .offset=offset, .reg=REG_FP)));
-        } else if (op->modifier == OP_MDF_STAR) {
-            add_mips_inst(new_mips_inst(MIPS_LW, .op1=reg_op[reg], \
-                        .op2=new_mips_op(MIPS_OP_ADDR, .offset=offset, .reg=REG_FP)));
-            add_mips_inst(new_mips_inst(MIPS_LW, .op1=reg_op[reg], \
-                        .op2=new_mips_op(MIPS_OP_ADDR, .offset=0, .reg=reg)));
+/* Generate the MIPS code for loading variables or immediate number */
+void Gen_MIPS_Load(IROperand* operand, MIPS_REG reg){
+    if (operand->kind == OP_IMMEDIATE){
+        Add_MIPS_Instr(Gen_MIPS_3_Op_Instr(MIPS_LI, reg_operand[reg], \
+            Gen_MIPS_Imm_Operand(MIPS_OP_IMM, operand->value_int), NULL));
+    }
+    else if (operand->kind == OP_VARIABLE || operand->kind == OP_TEMP_VAR){
+        int offset = Get_Var_Offset(operand->kind, operand->var_label_num);
+        if (operand->modifier == OP_MDF_NONE){
+            Add_MIPS_Instr(Gen_MIPS_3_Op_Instr(MIPS_LW, reg_operand[reg], \
+                Gen_MIPS_Reg_Addr_Operand(MIPS_OP_ADDR, REG_FP, offset), NULL));
         }
-    } else if (op->kind == OP_IMMEDIATE) {
-        add_mips_inst(new_mips_inst(MIPS_LI, .op1=reg_op[reg], \
-                    .op2=new_mips_op(MIPS_OP_IMM, .value=op->val_int)));
-    } else assert(false);
+        else if (operand->modifier == OP_MDF_FETCH_ADDR){
+            Add_MIPS_Instr(Gen_MIPS_3_Op_Instr(MIPS_LA, reg_operand[reg], \
+                Gen_MIPS_Reg_Addr_Operand(MIPS_OP_ADDR, REG_FP, offset), NULL));
+        }
+        else if (operand->modifier == OP_MDF_DEREFERENCE){
+            Add_MIPS_Instr(Gen_MIPS_3_Op_Instr(MIPS_LW, reg_operand[reg], \
+                Gen_MIPS_Reg_Addr_Operand(MIPS_OP_ADDR, REG_FP, offset), NULL));
+            Add_MIPS_Instr(Gen_MIPS_3_Op_Instr(MIPS_LW, reg_operand[reg], \
+                Gen_MIPS_Reg_Addr_Operand(MIPS_OP_ADDR, reg, 0), NULL));
+        }
+    }
+    else
+        assert(false);
 }
 
-void asm_proc_ir_code(struct ir_code *ir) {
-    //debug
-    printf(">>>>> ");
-    print_ir_code(stdout, ir);
-
-    // special treatment for "*a = b"
-    if (ir->kind == IR_ASSIGN && ir->dst->modifier == OP_MDF_STAR) {
-        int offset = get_offset(ir->dst->kind, ir->dst->no);
-        add_mips_inst(new_mips_inst(MIPS_LW, .op1=reg_op[REG_T1], \
-                    .op2=new_mips_op(MIPS_OP_ADDR, .offset=offset, .reg=REG_FP)));
-        gen_mips_load(ir->src, REG_T2);
-        add_mips_inst(new_mips_inst(MIPS_SW, .op1=reg_op[REG_T2], \
-                    .op2=new_mips_op(MIPS_OP_ADDR, .offset=0, .reg=REG_T1)));
+/* Translate intermediate representation codes into assembly codes */
+void Asm_Translatation(IRCode* ir){
+    /* Special treatment for ir_code: *a=b */
+    if (ir->kind == IR_ASSIGN && ir->dst->modifier == OP_MDF_DEREFERENCE){
+        int offset = Get_Var_Offset(ir->dst->kind, ir->dst->var_label_num);
+        /* TODO: Simplify */
+        Add_MIPS_Instr(Gen_MIPS_3_Op_Instr(MIPS_LW, reg_operand[REG_T1], \
+            Gen_MIPS_Reg_Addr_Operand(MIPS_OP_ADDR, REG_FP, offset), NULL));
+        Gen_MIPS_Load(ir->src, REG_T2);
+        Add_MIPS_Instr(Gen_MIPS_3_Op_Instr(MIPS_SW, reg_operand[REG_T2], \
+            Gen_MIPS_Reg_Addr_Operand(MIPS_OP_ADDR, REG_T1, 0), NULL));
+        
         return;
     }
 
-    if (!find_variable(ir->op->kind, ir->op->no)) {
-        // special treatment for "DEC v"
+    if (Find_Variable(ir->src->kind, ir->src->var_label_num) == false){
+        /* Special treatment for ir_code: DEC v xx */
         if (ir->kind == IR_DEC)
-            dec_local_var(ir->op->kind, ir->op->no, ir->size);
+            Dec_Local_Var(ir->src->kind, ir->src->var_label_num, ir->declared_size);
         else
-            add_local_var(ir->op->kind, ir->op->no);
-    }
-    // load dst/op to t1 if needed
-    if (ir->kind == IR_RETURN || ir->kind == IR_ARG || ir->kind == IR_WRITE) {
-        gen_mips_load(ir->op, REG_T1);
-    }
-    // load src1 to t2, src2 to t3 if needed
-    if (ir->kind != IR_CALL && ir->src1) {
-        if (!find_variable(ir->src1->kind, ir->src1->no))
-            add_local_var(ir->src1->kind, ir->src1->no);
-        gen_mips_load(ir->src1, REG_T2);
-    }
-    if (ir->src2) {
-        if (!find_variable(ir->src2->kind, ir->src2->no))
-            add_local_var(ir->src2->kind, ir->src2->no);
-        gen_mips_load(ir->src2, REG_T3);
+            Add_Local_Var(ir->src->kind, ir->src->var_label_num);
     }
 
+    /* Load dst/src to t1 if needed */
+    if (ir->kind == IR_RETURN || ir->kind == IR_ARG || ir->kind == IR_WRITE)
+        Gen_MIPS_Load(ir->src, REG_T1);
+
+    /* Load src1 to t2, src2 to t3 if needed */
+    if (ir->kind != IR_CALL && ir->src1 != NULL){
+        if (Find_Variable(ir->src1->kind, ir->src1->var_label_num) == false)
+            Add_Local_Var(ir->src1->kind, ir->src1->var_label_num);
+        Gen_MIPS_Load(ir->src1, REG_T2);
+    }
+    if (ir->src2 != NULL){
+        if (Find_Variable(ir->src2->kind, ir->src2->var_label_num) == false)
+            Add_Local_Var(ir->src2->kind, ir->src2->var_label_num);
+        Gen_MIPS_Load(ir->src2, REG_T3);
+    }
+
+    /* Translate other intermediate representation code */
     switch (ir->kind) {
     case IR_LABEL:
         sprintf(buf, "label%d", ir->op->no);
