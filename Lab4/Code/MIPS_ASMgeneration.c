@@ -5,42 +5,92 @@ static int callee_args_num=0;
 
 static char buffer[128];
 
+/* Common contents of the header in .asm files */
+char* common_MIPS_header = ".data\n\
+_prompt: .asciiz \"Enter an integer:\"\n\
+_ret: .asciiz \"\\n\"\n\
+.globl main\n\
+.text\n\
+read:\n\
+li $v0, 4\n\
+la $a0, _prompt\n\
+syscall\n\
+li $v0, 5\n\
+syscall\n\
+jr $ra\n\
+\n\
+write:\n\
+li $v0, 1\n\
+syscall\n\
+li $v0, 4\n\
+la $a0, _ret\n\
+syscall\n\
+move $v0, $0\n\
+jr $ra\n\
+\n";
+
+/* Generate different types of MIPS operands */
+MIPS_OP* Gen_MIPS_Label_Operand(MIPS_OP_TYPE op_type, char* label_name){
+    assert(op_type == MIPS_OP_LABEL);
+    
+    MIPS_OP* new_MIPS_op = malloc(sizeof(MIPS_OP));
+    new_MIPS_op->kind = op_type;
+    new_MIPS_op->label = label_name;
+
+    return new_MIPS_op;
+}
+
+MIPS_OP* Gen_MIPS_Imm_Operand(MIPS_OP_TYPE op_type, int value){
+    assert(op_type == MIPS_OP_IMM);
+    
+    MIPS_OP* new_MIPS_op = malloc(sizeof(MIPS_OP));
+    new_MIPS_op->kind = op_type;
+    new_MIPS_op->value = value;
+
+    return new_MIPS_op;
+}
+
+MIPS_OP* Gen_MIPS_Reg_Addr_Operand(MIPS_OP_TYPE op_type, MIPS_REG reg, int offset){
+    assert(op_type == MIPS_OP_REG || op_type == MIPS_OP_ADDR);
+    
+    MIPS_OP* new_MIPS_op = malloc(sizeof(MIPS_OP));
+    new_MIPS_op->kind = op_type;
+    new_MIPS_op->reg = reg;
+    new_MIPS_op->offset = offset;
+
+    return new_MIPS_op;
+}
+
 MIPS_INSTR* Add_MIPS_Instr(MIPS_INSTR* instr){
     if (asm_list_head!=NULL){
+        instr->next = instr->prev = NULL;
         asm_list_head = asm_list_tail = instr;
-        
     }
+    else{
+        asm_list_tail->next = instr;
+        instr->prev = asm_list_tail;
+        asm_list_tail = instr;
+    }
+    return instr;
 }
 
-struct mips_inst *add_mips_inst(struct mips_inst *inst) {
-    if (asm_list == NULL) {
-        asm_list = asm_list_tail = inst;
-        inst->next = inst->prev = NULL;
-    } else {
-        asm_list_tail->next = inst;
-        inst->prev = asm_list_tail;
-        asm_list_tail = inst;
-    }
-    ///////debug
-    print_mips_inst(stdout, inst);
+void Asm_MIPS_Generation(FILE *file){
+    fprintf(file, "%s", common_MIPS_header);
 
-    return inst;
-}
-
-char *common_mips_header;
-void asm_mips_translate(FILE *f) {
-    fputs(common_mips_header, f);
-    // first generate the 0~31 register operand
-    for (int i = 0; i < 32; i++) {
-        reg_op[i] = new_mips_op(MIPS_OP_REG, .reg=i);
+    /* First generate the 0~31 register operands */
+    int idx = 0;
+    for (;idx<32;++idx){
+        reg_operand[idx] = Gen_MIPS_Reg_Addr_Operand(MIPS_OP_REG, (MIPS_REG)idx, -1);
     }
-    asm_cut_function_block(ir_list, ir_list_tail);
+
+    Asm_Func_Block_Generation(ir_list_head, ir_list_tail);
+    
     for (struct mips_inst *p = asm_list; p != asm_list_tail->next; p = p->next) {
         print_mips_inst(f, p);
     }
 }
 
-void asm_cut_function_block(struct ir_code *head, struct ir_code *tail) {
+void Asm_Func_Block_Generation(struct ir_code *head, struct ir_code *tail) {
     assert(head && tail && head != tail);
     struct ir_code *p = head->next;
     struct ir_code *block_head = head;
@@ -316,25 +366,3 @@ char *get_mips_op_str(struct mips_operand *op) {
     assert(false);
 }
 
-char *common_mips_header = ".data\n\
-_prompt: .asciiz \"Enter an integer:\"\n\
-_ret: .asciiz \"\\n\"\n\
-.globl main\n\
-.text\n\
-read:\n\
-li $v0, 4\n\
-la $a0, _prompt\n\
-syscall\n\
-li $v0, 5\n\
-syscall\n\
-jr $ra\n\
-\n\
-write:\n\
-li $v0, 1\n\
-syscall\n\
-li $v0, 4\n\
-la $a0, _ret\n\
-syscall\n\
-move $v0, $0\n\
-jr $ra\n\
-\n";

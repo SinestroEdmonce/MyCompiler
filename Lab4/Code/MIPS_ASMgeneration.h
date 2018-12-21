@@ -73,4 +73,9 @@ MIPS_INSTR* asm_list_tail;
 
 MIPS_OP* reg_operand[32];
 
+/* Generate different types of MIPS operands */ 
+MIPS_OP* Gen_MIPS_Label_Operand(MIPS_OP_TYPE op_type, char* label_name);
+MIPS_OP* Gen_MIPS_Imm_Operand(MIPS_OP_TYPE op_type, int value);
+MIPS_OP* Gen_MIPS_Reg_Addr_Operand(MIPS_OP_TYPE op_type, MIPS_REG reg, int offset);
+
 #endif
