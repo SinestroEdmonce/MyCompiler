@@ -15,8 +15,10 @@ typedef struct Local_Var_{
 
 /* Data structure for stack frame */
 typedef struct Frame_Info_{
-    Local_Var* local_var;
+    Local_Var* variable;
+    /* Variable offset is assigned with -8 */
     int var_offset;
+    /* Arguments offset is assigned with 4 */
     int arg_offset;
 } Frame_Info;
 
@@ -30,9 +32,9 @@ Local_Var* Add_Local_Var(OP_TYPE op_type, int num){
     lvar->kind = op_type;
     lvar->num = num;
     lvar->offset = frame->var_offset;
-    lvar->next = frame->local_var;
+    lvar->next = frame->variable;
     
-    frame->local_var = lvar;
+    frame->variable = lvar;
     frame->var_offset = frame->var_offset - 4;
     return lvar;
 }
@@ -44,50 +46,62 @@ Local_Var* Add_Args_Var(OP_TYPE op_type, int num){
     lvar->kind = op_type;
     lvar->num = num;
     lvar->offset = frame->arg_offset;
-    lvar->next = frame->local_var;
+    lvar->next = frame->variable;
 
-    frame->local_var = lvar;
-    frame->arg_offset = frame->arg_offset + 4;
+    frame->variable = lvar;
+    frame->arg_offset = frame->arg_offset+4;
     return lvar;
 }
 
-static struct local_var *dec_local_var(enum op_type kind, int no, int size) {
-    assert(frame != NULL);
-    struct local_var *var = new(struct local_var, .kind=kind, .no=no);
-    frame->arg_offset += size;
-    var->offset = frame->arg_offset - 4;
-    var->next = frame->variables;
-    frame->variables = var;
-    return var;
+Local_Var* Dec_Local_Var(OP_TYPE op_type, int num, int size){
+    assert(frame!=NULL);
+
+    Local_Var* lvar = malloc(sizeof(Local_Var));
+    lvar->kind = op_type;
+    lvar->num = num;
+    lvar->offset = frame->var_offset;
+    lvar->next = frame->variable;
+
+    frame->var_offset = frame->var_offset-size;
+    frame->variable = lvar;
+    return lvar;
 }
 
-static struct local_var *find_variable(enum op_type kind, int no) {
-    assert(frame != NULL);
-    for (struct local_var *p = frame->variables; p; p = p->next) {
-        if (p->kind == kind && p->no == no) return p;
+Local_Var* Find_Variable(OP_TYPE kind, int num){
+    assert(frame!=NULL);
+
+    for(Local_Var* pt=frame->variable;pt!=NULL;pt=pt->next){
+        if (pt->kind==kind && pt->num==num)
+            return pt;
     }
     return NULL;
 }
 
-static int get_offset(enum op_type kind, int no) {
-    struct local_var *var = find_variable(kind, no);
-    if (var) return var->offset;
-    else return -1; // -1 means variable not found
+int Get_Var_Offset(OP_TYPE kind, int num){
+    Local_Var* var = Find_Variable(kind, num);
+    if (var!=NULL)
+        return var->offset;
+    else
+        return -1;  // The variable has not been found
 }
 
-static void release_frame() {
-    assert(frame != NULL);
-    while (frame->variables) {
-        struct local_var *t = frame->variables;
-        frame->variables = t->next;
-        free(t);
+void Release_Frame(){
+    assert(frame!=NULL);
+    
+    while(frame->variable!=NULL){
+        Local_Var* temp = frame->variable;
+        frame->variable = temp->next;
+        free(temp);
     }
     free(frame);
     frame = NULL;
 }
 
-static void new_frame() {
-    frame = new(struct frame_info, NULL, -8, 4);
+void New_Stack_Frame(){
+    frame = malloc(sizeof(Frame_Info));
+    frame->arg_offset = 4;
+    frame->var_offset = -8;
+    frame->variable = NULL;
 }
 
 #endif
