@@ -1,7 +1,8 @@
+#include<string.h>
 #include "MIPS_ASMgeneration.h"
 #include "StackFrame.h"
 
-static int callee_args_num=0;
+static int callee_args_num = 0;
 
 static char buffer[128];
 
@@ -278,80 +279,92 @@ void Asm_Translatation(IRCode* ir){
     }
 
     /* Translate other intermediate representation code */
-    switch (ir->kind) {
-    case IR_LABEL:
-        sprintf(buf, "label%d", ir->op->no);
-        add_mips_inst(new_mips_inst(MIPS_LABEL, .label=strdup(buf)));
-        break;
-    case IR_CALL:
-        add_mips_inst(new_mips_inst(MIPS_JAL, \
-                    .op=new_mips_op(MIPS_OP_LABEL, .label=ir->func->name)));
-        add_mips_inst(new_mips_inst(MIPS_ADDI, .op1=reg_op[REG_SP], \
-                    .op2=reg_op[REG_SP],
-                    .op3=new_mips_op(MIPS_OP_IMM, .value=n_callee_args * 4)));
-        add_mips_inst(new_mips_inst(MIPS_MOVE, .op1=reg_op[REG_T1], .op2=reg_op[REG_V0]));
-        break;
-    case IR_ASSIGN:
-        add_mips_inst(new_mips_inst(MIPS_MOVE, .op1=reg_op[REG_T1], .op2=reg_op[REG_T2]));
-        break;
-    case IR_ADD:
-        add_mips_inst(new_mips_inst(MIPS_ADD, .op1=reg_op[REG_T1], \
-                    .op2=reg_op[REG_T2], .op3=reg_op[REG_T3]));
-        break;
-    case IR_SUB:
-        add_mips_inst(new_mips_inst(MIPS_SUB, .op1=reg_op[REG_T1], \
-                    .op2=reg_op[REG_T2], .op3=reg_op[REG_T3]));
-        break;
-    case IR_MUL:
-        add_mips_inst(new_mips_inst(MIPS_MUL, .op1=reg_op[REG_T1], \
-                    .op2=reg_op[REG_T2], .op3=reg_op[REG_T3]));
-        break;
-    case IR_DIV:
-        add_mips_inst(new_mips_inst(MIPS_DIV, .op1=reg_op[REG_T2], .op2=reg_op[REG_T3]));
-        add_mips_inst(new_mips_inst(MIPS_MFLO, .op1=reg_op[REG_T1]));
-        break;
-    case IR_GOTO:
-        sprintf(buf, "label%d", ir->op->no);
-        add_mips_inst(new_mips_inst(MIPS_J, .op=new_mips_op(MIPS_OP_LABEL, .label=strdup(buf))));
-        break;
-        enum mips_inst_type branch_inst;
-    case IR_IF_GOTO:
-        switch (ir->relop) {
-        case RELOP_EQ:  branch_inst = MIPS_BEQ; break;
-        case RELOP_NEQ: branch_inst = MIPS_BNE; break;
-        case RELOP_G:   branch_inst = MIPS_BGT; break;
-        case RELOP_L:   branch_inst = MIPS_BLT; break;
-        case RELOP_GE:  branch_inst = MIPS_BGE; break;
-        case RELOP_LE:  branch_inst = MIPS_BLE; break;
+    switch (ir->kind){
+        case IR_LABEL:{
+            sprintf(buffer, "label%d", ir->src->var_label_num);
+            Add_MIPS_Instr(Gen_MIPS_1_Label_Instr(MIPS_LABEL, strdup(buffer)));
+            break;
         }
-        sprintf(buf, "label%d", ir->op->no);
-        add_mips_inst(new_mips_inst(branch_inst, .op1=reg_op[REG_T2], \
-                    .op2=reg_op[REG_T3], .op3=new_mips_op(MIPS_OP_LABEL, .label=strdup(buf))));
-        break;
-    case IR_RETURN:
-        add_mips_inst(new_mips_inst(MIPS_MOVE, .op1=reg_op[REG_V0], .op2=reg_op[REG_T1]));
-        // Generate epilogue:
-        // move $sp, $fp
-        // lw $ra, -4($sp)
-        // lw $fp, 0($sp)
-        // jr $ra
-        add_mips_inst(new_mips_inst(MIPS_MOVE, .op1=reg_op[REG_SP], .op2=reg_op[REG_FP]));
-        add_mips_inst(new_mips_inst(MIPS_LW, .op1=reg_op[REG_RA],\
-                    .op2=new_mips_op(MIPS_OP_ADDR, .reg=REG_SP, .offset=-4)));
-        add_mips_inst(new_mips_inst(MIPS_LW, .op1=reg_op[REG_FP],\
-                    .op2=new_mips_op(MIPS_OP_ADDR, .reg=REG_SP, .offset=0)));
-        add_mips_inst(new_mips_inst(MIPS_JR, .op=reg_op[REG_RA]));
-        break;
-    case IR_DEC:
-        break; // has been processed before
-    case IR_ARG:
-        add_mips_inst(new_mips_inst(MIPS_SW, .op1=reg_op[REG_T1], \
-                    .op2=new_mips_op(MIPS_OP_ADDR, .offset=0, .reg=REG_SP)));
-        add_mips_inst(new_mips_inst(MIPS_ADDI, .op1=reg_op[REG_SP], .op2=reg_op[REG_SP], \
-                    .op3=&op_imm_minus4));
-        n_callee_args++;
-        break;
-    case IR_READ:
+        case IR_CALL:{
+            Add_MIPS_Instr(Gen_MIPS_1_Op_Instr(MIPS_JAL, \
+                Gen_MIPS_Label_Operand(MIPS_OP_LABEL, ir->func->var_func_name)));
+            Add_MIPS_Instr(Gen_MIPS_3_Op_Instr(MIPS_ADDI, reg_operand[REG_SP], \
+                reg_operand[REG_SP], Gen_MIPS_Imm_Operand(MIPS_OP_IMM, callee_args_num*4)));
+            Add_MIPS_Instr(Gen_MIPS_3_Op_Instr(MIPS_MOVE, reg_operand[REG_T1], reg_operand[REG_V0], NULL));
+            /* Restore the counter of arguments */
+            callee_args_num = 0;
+            break;
+        }
+        case IR_ASSIGN:{
+            Add_MIPS_Instr(Gen_MIPS_3_Op_Instr(MIPS_MOVE, reg_operand[REG_T1], reg_operand[REG_T2], NULL));
+            break;
+        }
+        case IR_ADD:{
+            Add_MIPS_Instr(Gen_MIPS_3_Op_Instr(MIPS_ADD, reg_operand[REG_T1], reg_operand[REG_T2], reg_operand[REG_T3]));
+            break;
+        }
+        case IR_SUB:{
+            Add_MIPS_Instr(Gen_MIPS_3_Op_Instr(MIPS_SUB, reg_operand[REG_T1], reg_operand[REG_T2], reg_operand[REG_T3]));
+            break;
+        }
+        case IR_MUL:{
+            Add_MIPS_Instr(Gen_MIPS_3_Op_Instr(MIPS_MUL, reg_operand[REG_T1], reg_operand[REG_T2], reg_operand[REG_T3]));
+            break;
+        }
+        case IR_DIV:{
+            Add_MIPS_Instr(Gen_MIPS_3_Op_Instr(MIPS_DIV, reg_operand[REG_T2], reg_operand[REG_T3],NULL));
+            Add_MIPS_Instr(Gen_MIPS_1_Op_Instr(MIPS_MFLO, reg_operand[REG_T1]));
+            break;
+        }
+        case IR_GOTO:{
+            sprintf(buffer, "label%d", ir->src->var_label_num);
+            Add_MIPS_Instr(Gen_MIPS_1_Op_Instr(MIPS_J, Gen_MIPS_Label_Operand(MIPS_OP_LABEL, strdup(buffer))));
+            break;
+        }
+        case IR_IF_GOTO:{
+            MIPS_INSTR_TYPE branch_type;
+            switch (ir->relop){
+                case RELOP_EQ:  branch_type = MIPS_BEQ; break;
+                case RELOP_NEQ: branch_type = MIPS_BNE; break;
+                case RELOP_G:   branch_type = MIPS_BGT; break;
+                case RELOP_L:   branch_type = MIPS_BLT; break;
+                case RELOP_GE:  branch_type = MIPS_BGE; break;
+                case RELOP_LE:  branch_type = MIPS_BLE; break;
+            }
+            sprintf(buffer, "label%d", ir->src->var_label_num);
+            Add_MIPS_Instr(Gen_MIPS_3_Op_Instr(branch_type, reg_operand[REG_T2], reg_operand[REG_T3], \
+                Gen_MIPS_Label_Operand(MIPS_OP_LABEL, strdup(buffer))));
+            break;
+        }
+        case IR_RETURN:{
+            Add_MIPS_Instr(Gen_MIPS_3_Op_Instr(MIPS_MOVE, reg_operand[REG_V0], reg_operand[REG_T1], NULL));
+            /* Generate epilogue:
+             * move $sp, $fp
+             * lw $ra, -4($sp)
+             * lw $fp, 0($sp)
+             * jr $ra
+             */
+            Add_MIPS_Instr(Gen_MIPS_3_Op_Instr(MIPS_MOVE, reg_operand[REG_SP], reg_operand[REG_FP], NULL));
+            Add_MIPS_Instr(Gen_MIPS_3_Op_Instr(MIPS_LW, reg_operand[REG_RA], \
+                Gen_MIPS_Reg_Addr_Operand(MIPS_OP_ADDR, reg_operand[REG_SP], -4), NULL));
+            Add_MIPS_Instr(Gen_MIPS_3_Op_Instr(MIPS_LW, reg_operand[REG_FP], \
+                Gen_MIPS_Reg_Addr_Operand(MIPS_OP_ADDR, reg_operand[REG_SP], 0), NULL));
+            Add_MIPS_Instr(Gen_MIPS_1_Op_Instr(MIPS_JR, reg_operand[REG_RA]));
+            break;
+        }
+        case IR_DEC:
+            break;
+        case IR_ARG:{
+            Add_MIPS_Instr(Gen_MIPS_3_Op_Instr(MIPS_SW, reg_operand[REG_T1], \
+                Gen_MIPS_Reg_Addr_Operand(MIPS_OP_ADDR, REG_SP, 0), NULL));
+            Add_MIPS_Instr(Gen_MIPS_3_Op_Instr(MIPS_ADDI, reg_operand[REG_SP], reg_operand[REG_SP], \
+                Gen_MIPS_Imm_Operand(MIPS_OP_IMM, -4)));
+            callee_args_num = callee_args_num+1;
+            break;
+        }
+        case IR_READ:{
+            Add_MIPS_Instr()
+        }
         add_mips_inst(new_mips_inst(MIPS_SW, .op1=reg_op[REG_RA], \
                     .op2=new_mips_op(MIPS_OP_ADDR, .reg=REG_SP, .offset=0)));
         add_mips_inst(new_mips_inst(MIPS_JAL, .op=new_mips_op(MIPS_OP_LABEL, .label="read")));
@@ -403,13 +416,13 @@ char *get_mips_op_str(struct mips_operand *op) {
     case MIPS_OP_LABEL:
         return op->label;
     case MIPS_OP_IMM:
-        sprintf(buf, "%d", op->value);
-        return strdup(buf);
+        sprintf(buffer, "%d", op->value);
+        return strdup(buffer);
     case MIPS_OP_REG:
         return reg_name[op->reg];
     case MIPS_OP_ADDR:
-        sprintf(buf, "%d(%s)", op->offset, reg_name[op->reg]);
-        return strdup(buf);
+        sprintf(buffer, "%d(%s)", op->offset, reg_name[op->reg]);
+        return strdup(buffer);
     }
     assert(false);
 }
