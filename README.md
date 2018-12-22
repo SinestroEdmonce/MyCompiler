@@ -4,3 +4,5 @@
 - GNU Flex
 - GNU Bison
 - gcc 5.4.0
+- PyQt
+- QtSpim
