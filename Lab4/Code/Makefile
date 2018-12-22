@@ -18,4 +18,4 @@ scanner:
 	gcc main.c lex.yy.c -lfl -o scanner
 
 clean:
-	rm -rf lex.yy.c syntax.tab.* ./../parser scanner ./../*.txt ./../Test_IR syntax.output
+	rm -rf lex.yy.c syntax.tab.* ./../parser scanner ./../*.txt ./../Test_IR ./../Test_ASM ./../Test_ST ./../Test_SA ./../Test_ST_SA syntax.output
