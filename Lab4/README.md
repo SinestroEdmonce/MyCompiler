@@ -21,9 +21,64 @@
 
 1. 为了能够生成MIPS汇编代码，首先要针对**寄存器描述符**和**地址描述符**建立合理的数据结构。
 
-    - 采用朴素寄存器分配法，则基本无需考虑寄存器如何合理分配，所有变量（临时变量、局部变量等）都会溢出到内存中。所以设计一个数据结构，针对每一个操作数，存储其类型、作为基地址的寄存器和偏移量。
+    - 采用朴素寄存器分配法，则基本无需考虑寄存器分配，所有变量（临时变量、局部变量等）都会溢出到内存中。所以设计一个数据结构，针对每一个操作数，存储其类型、作为基地址的寄存器（一般是``$fp``，溢出到栈中）和偏移量。
 
-## 实现思路(TODO)
+        ```cpp
+        typedef struct MIPS_Operand_{
+            /* The type of the operand */
+            MIPS_OP_TYPE kind;
+            union {
+                int value;
+                char* label;
+                struct { 
+                    // MIPS_OP_ADDR use both
+                    MIPS_REG reg;   // MIPS_OP_REG use this only
+                    int offset;
+                };
+            };
+        } MIPS_OP;
+        ```
+        除此之外，针对每一条MIPS汇编代码，设计数据结构专门用于存储汇编代码中的指令，操作数等。
+
+        ```cpp
+            typedef struct MIPS_INSTR_ {
+                // Type of the instructions
+                MIPS_INSTR_TYPE kind;
+                union {
+                    struct {
+                        MIPS_OP *op1, *op2, *op3;
+                    };
+                MIPS_OP* operand;
+                char* label;
+                };
+            struct MIPS_INSTR_ *prev, *next;
+        } MIPS_INSTR;
+        ```
+
+        为了将所有变量溢出到栈中存储，必须在生成汇编代码的同时合理分配栈中内存位置，也就是说，任何一个变量存储到栈中都必须记录其在栈中的位置，由于``$sp``栈指针在构造活动记录的时候可能由于声明数组或结构体等局部变量而变化，因此采用以``$fp``帧指针作为基地址，所有变量都计算到``$fp``的偏移量，最终的``$sp``的位置也可以根据所有临时变量或局部变量被分配到的总空间来得到。
+
+        ```cpp
+        /* Data structure for local variables */
+        typedef struct Local_Var_{
+            OP_TYPE kind;
+            int num;
+            /* Offset in stack frame related to $fp */
+            int offset;
+            struct Local_Var_* next;
+        } Local_Var;
+
+        /* Data structure for stack frame */
+        typedef struct Frame_Info_{
+            Local_Var* variable;
+            /* Variable offset is initialized by -8 */
+            int var_offset;
+            /* Arguments offset is initialized by 4 */
+            int arg_offset;
+        } Frame_Info;
+        ``` 
+    - 局部寄存器分配法（TODO）
+
+## 实现思路
 
 ## 实验难点(TODO)
 
