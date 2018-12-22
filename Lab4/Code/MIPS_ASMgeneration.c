@@ -281,6 +281,7 @@ void Asm_Translatation(IRCode* ir){
     /* Translate other intermediate representation code */
     switch (ir->kind){
         case IR_LABEL:{
+            memset(buffer, '\0', sizeof(buffer));
             sprintf(buffer, "label%d", ir->src->var_label_num);
             Add_MIPS_Instr(Gen_MIPS_1_Label_Instr(MIPS_LABEL, strdup(buffer)));
             break;
@@ -317,6 +318,7 @@ void Asm_Translatation(IRCode* ir){
             break;
         }
         case IR_GOTO:{
+            memset(buffer, '\0', sizeof(buffer));
             sprintf(buffer, "label%d", ir->src->var_label_num);
             Add_MIPS_Instr(Gen_MIPS_1_Op_Instr(MIPS_J, Gen_MIPS_Label_Operand(MIPS_OP_LABEL, strdup(buffer))));
             break;
@@ -331,6 +333,7 @@ void Asm_Translatation(IRCode* ir){
                 case RELOP_GE:  branch_type = MIPS_BGE; break;
                 case RELOP_LE:  branch_type = MIPS_BLE; break;
             }
+            memset(buffer, '\0', sizeof(buffer));
             sprintf(buffer, "label%d", ir->src->var_label_num);
             Add_MIPS_Instr(Gen_MIPS_3_Op_Instr(branch_type, reg_operand[REG_T2], reg_operand[REG_T3], \
                 Gen_MIPS_Label_Operand(MIPS_OP_LABEL, strdup(buffer))));
@@ -346,9 +349,9 @@ void Asm_Translatation(IRCode* ir){
              */
             Add_MIPS_Instr(Gen_MIPS_3_Op_Instr(MIPS_MOVE, reg_operand[REG_SP], reg_operand[REG_FP], NULL));
             Add_MIPS_Instr(Gen_MIPS_3_Op_Instr(MIPS_LW, reg_operand[REG_RA], \
-                Gen_MIPS_Reg_Addr_Operand(MIPS_OP_ADDR, reg_operand[REG_SP], -4), NULL));
+                Gen_MIPS_Reg_Addr_Operand(MIPS_OP_ADDR, REG_SP, -4), NULL));
             Add_MIPS_Instr(Gen_MIPS_3_Op_Instr(MIPS_LW, reg_operand[REG_FP], \
-                Gen_MIPS_Reg_Addr_Operand(MIPS_OP_ADDR, reg_operand[REG_SP], 0), NULL));
+                Gen_MIPS_Reg_Addr_Operand(MIPS_OP_ADDR, REG_SP, 0), NULL));
             Add_MIPS_Instr(Gen_MIPS_1_Op_Instr(MIPS_JR, reg_operand[REG_RA]));
             break;
         }
@@ -363,67 +366,89 @@ void Asm_Translatation(IRCode* ir){
             break;
         }
         case IR_READ:{
-            Add_MIPS_Instr()
+            Add_MIPS_Instr(Gen_MIPS_3_Op_Instr(MIPS_SW, reg_operand[REG_RA], \
+                Gen_MIPS_Reg_Addr_Operand(MIPS_OP_ADDR, REG_SP, 0), NULL));
+            Add_MIPS_Instr(Gen_MIPS_1_Op_Instr(MIPS_JAL, Gen_MIPS_Label_Operand(MIPS_OP_LABEL, "read")));
+            Add_MIPS_Instr(Gen_MIPS_3_Op_Instr(MIPS_MOVE, reg_operand[REG_T1], reg_operand[REG_V0], NULL));
+            Add_MIPS_Instr(Gen_MIPS_3_Op_Instr(MIPS_LW, reg_operand[REG_RA], \
+                Gen_MIPS_Reg_Addr_Operand(MIPS_OP_ADDR, REG_SP, 0), NULL));
+            break;
         }
-        add_mips_inst(new_mips_inst(MIPS_SW, .op1=reg_op[REG_RA], \
-                    .op2=new_mips_op(MIPS_OP_ADDR, .reg=REG_SP, .offset=0)));
-        add_mips_inst(new_mips_inst(MIPS_JAL, .op=new_mips_op(MIPS_OP_LABEL, .label="read")));
-        add_mips_inst(new_mips_inst(MIPS_MOVE, .op1=reg_op[REG_T1], .op2=reg_op[REG_V0]));
-        add_mips_inst(new_mips_inst(MIPS_LW, .op1=reg_op[REG_RA],\
-                    .op2=new_mips_op(MIPS_OP_ADDR, .reg=REG_SP, .offset=0)));
-        break;
-    case IR_WRITE:
-        add_mips_inst(new_mips_inst(MIPS_SW, .op1=reg_op[REG_RA], \
-                    .op2=new_mips_op(MIPS_OP_ADDR, .reg=REG_SP, .offset=0)));
-        add_mips_inst(new_mips_inst(MIPS_MOVE, .op1=reg_op[REG_A0], .op2=reg_op[REG_T1]));
-        add_mips_inst(new_mips_inst(MIPS_JAL, .op=new_mips_op(MIPS_OP_LABEL, .label="write")));
-        add_mips_inst(new_mips_inst(MIPS_LW, .op1=reg_op[REG_RA],\
-                    .op2=new_mips_op(MIPS_OP_ADDR, .reg=REG_SP, .offset=0)));
-        break;
-    case IR_FUNCTION:
-    case IR_PARAM:
-        assert(false);
+        case IR_WRITE:{
+            Add_MIPS_Instr(Gen_MIPS_3_Op_Instr(MIPS_SW, reg_operand[REG_RA], \
+                Gen_MIPS_Reg_Addr_Operand(MIPS_OP_ADDR, REG_SP, 0), NULL));
+            Add_MIPS_Instr(Gen_MIPS_3_Op_Instr(MIPS_MOVE, reg_operand[REG_A0], reg_operand[REG_T1], NULL));
+            Add_MIPS_Instr(Gen_MIPS_1_Op_Instr(MIPS_JAL, Gen_MIPS_Label_Operand(MIPS_OP_LABEL, "write")));
+            Add_MIPS_Instr(Gen_MIPS_3_Op_Instr(MIPS_LW, reg_operand[REG_RA], \
+                Gen_MIPS_Reg_Addr_Operand(MIPS_OP_ADDR, REG_SP, 0), NULL));
+            break;
+        }
+        case IR_FUNCTION:
+        case IR_PARAM:
+            assert(false);
     }
 
-    // store result if needed
-    int offset = get_offset(ir->op->kind, ir->op->no);
-    if (ir->kind == IR_ASSIGN || ir->kind == IR_ADD || ir->kind == IR_SUB || \
-            ir->kind == IR_DIV || ir->kind == IR_MUL || ir->kind == IR_READ || \
-            ir->kind == IR_CALL) {
-        add_mips_inst(new_mips_inst(MIPS_SW, .op1=reg_op[REG_T1], \
-                    .op2=new_mips_op(MIPS_OP_ADDR, .reg=REG_FP, .offset=offset)));
+    /* Store the result if required */
+    int offset = Get_Var_Offset(ir->src->kind, ir->src->var_label_num);
+    /* Store the dst/src into the memory */
+    if (ir->kind == IR_ASSIGN || ir->kind == IR_ADD || 
+        ir->kind == IR_SUB || ir->kind == IR_DIV || 
+        ir->kind == IR_MUL || ir->kind == IR_READ || 
+        ir->kind == IR_CALL) {
+            Add_MIPS_Instr(Gen_MIPS_3_Op_Instr(MIPS_SW, reg_operand[REG_T1], \
+                Gen_MIPS_Reg_Addr_Operand(MIPS_OP_ADDR, REG_FP, offset), NULL));
     }
 }
 
+/* Obtain the string type of MIPS operands */
+char* MIPS_Operand(MIPS_OP* operand){
+    switch (operand->kind){
+        case MIPS_OP_ADDR:{
+            memset(buffer, '\0', sizeof(buffer));
+            sprintf(buffer, "%d(%s)", (int)(operand->offset), MIPS_reg_name[operand->reg]);
+            return strdup(buffer);
+        }
+        case MIPS_OP_REG:{
+            return MIPS_reg_name[operand->reg];
+        }
+        case MIPS_OP_LABEL:{
+            return operand->label;
+        }
+        case MIPS_OP_IMM:{
+            memset(buffer, '\0', sizeof(buffer));
+            sprintf(buffer, "%d", operand->value);
+            return strdup(buffer);
+        }
+        default: assert(false);
+    }
+}
 
+/* Output the .asm result to the files */
 void Print_MIPS_ASM(FILE* file, MIPS_INSTR* instr){
-    if (inst->kind == MIPS_LABEL) {
-        fprintf(f, "%s:\n", inst->label);
-        return;
+    if (file == NULL){
+        if (instr->kind == MIPS_LABEL){
+            printf("%s:\n", instr->label);
+            return;
+        }
+        printf("%s", MIPS_instr[instr->kind]);
+        if (instr->op1 != NULL)
+            printf(" %s", MIPS_Operand(instr->op1));
+        if (instr->op2 != NULL)
+            printf(" %s", MIPS_Operand(instr->op2));
+        if (instr->op3 != NULL)
+            printf(" %s", MIPS_Operand(instr->op2));
     }
-    fprintf(f, "%s", mips_inst_str[inst->kind]);
-    if (inst->op1)
-        fprintf(f, " %s", get_mips_op_str(inst->op1));
-    if (inst->op2)
-        fprintf(f, ", %s", get_mips_op_str(inst->op2));
-    if (inst->op3)
-        fprintf(f, ", %s", get_mips_op_str(inst->op3));
-    fprintf(f, "\n");
-}
-
-char *get_mips_op_str(struct mips_operand *op) {
-    switch (op->kind) {
-    case MIPS_OP_LABEL:
-        return op->label;
-    case MIPS_OP_IMM:
-        sprintf(buffer, "%d", op->value);
-        return strdup(buffer);
-    case MIPS_OP_REG:
-        return reg_name[op->reg];
-    case MIPS_OP_ADDR:
-        sprintf(buffer, "%d(%s)", op->offset, reg_name[op->reg]);
-        return strdup(buffer);
+    else{
+        if (instr->kind == MIPS_LABEL){
+            fprintf(file, "%s:\n", instr->label);
+            return;
+        }
+        fprintf(file, "%s", MIPS_instr[instr->kind]);
+        if (instr->op1 != NULL)
+            fprintf(file, " %s", MIPS_Operand(instr->op1));
+        if (instr->op2 != NULL)
+            fprintf(file, " %s", MIPS_Operand(instr->op2));
+        if (instr->op3 != NULL)
+            fprintf(file, " %s", MIPS_Operand(instr->op2));
     }
-    assert(false);
 }
-

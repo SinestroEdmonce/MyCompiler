@@ -86,4 +86,27 @@ MIPS_INSTR* Gen_MIPS_3_Op_Instr(MIPS_INSTR_TYPE instr_type, MIPS_OP* op1, MIPS_O
 /* Output the assembly code to the file */
 void Print_MIPS_ASM(FILE* file, MIPS_INSTR* instr);
 
+/* Obtain the string type of MIPS operands */
+char* MIPS_Operand(MIPS_OP* operand);
+
+/* Translate intermediate representation codes into assembly codes */
+void Asm_Translatation(IRCode* ir);
+
+/* Generate the MIPS code for loading variables or immediate number */
+void Gen_MIPS_Load(IROperand* operand, MIPS_REG reg);
+
+/* Translate every part in intermediate representation codes as a complete function */
+void Asm_Func_Block_Generation(IRCode* ir_head, IRCode* ir_tail);
+
+/* Split the intermediate representation codes into parts, 
+ * each of which begins with a function(IR_FUNCTION) 
+ */
+void Asm_Func_Block_Split(IRCode* ir_head, IRCode* ir_tail);
+
+/* Generate the MIPS instructions and output to files */
+void Asm_MIPS_Generation(FILE *file);
+
+/* Link new instruction node to the end of the MIPS_Instr list */
+MIPS_INSTR* Add_MIPS_Instr(MIPS_INSTR* instr);
+
 #endif
