@@ -31,7 +31,6 @@ if [[ $paras_num == 1 && "$@" == "--clean" ]];then
 else
     # Enter into Code folder to build.
     cd Code
-    make clean
     make parser
 
     # Change the location of the excutable file.
@@ -60,17 +59,32 @@ else
             ./parser -ir ./$src_name/test${i}.txt 1>>${target_name}/test${i}_ir.ir 2>>${target_name}/test${i}_ir.ir
         done
     else
-        rm -rf ${target_name}
         args=" "
-        flag=0
+
+        st_flag=0
+        sa_flag=0
+        ir_flag=0
+        asm_flag=0
+
         echo "User-Chosen Mode: " $@
 
         # Determine the result path and other modes that are chosen
         for arg in "$@"
         do
             if [ ${arg} == "-p" ];then
-                flag=1
+                st_flag=1
             fi
+            if [ ${arg} == "-a" ];then
+                asm_flag=1
+            fi
+            if [ ${arg} == "-ir" ];then
+                ir_flag=1
+                rm -rf "Test_IR"
+            fi
+            if [ ${arg} == "-s" ];then
+                sa_flag=1
+            fi
+
             if [ ${arg:0:1} != "-" ];then
                 target_name=${arg}
             else
@@ -80,13 +94,56 @@ else
 
         # Start the program execution
         echo "User-Chosen Storage Path: ${target_name}"
-        mkdir ${target_name}
         for ((i=1;i<=$file_num;i++))
         do
-            if [ $flag == 0 ];then
+            if [[ $st_flag == 0 && $sa_flag == 0 && $ir_flag == 0 && $asm_flag == 1 ]];then
+                if [ ${target_name} == "Test_IR" ];then
+                    echo "Change the default storage path: ${target_name} -> Test_ASM"
+                    target_name="Test_ASM"
+                    echo ${target_name}
+                    rm -rf ${target_name}
+                fi
+                if [ $(find ./ -name ${target_name} | wc -l) == 0 ];then
+                    mkdir ${target_name}
+                fi
+                ./parser ${args} ./$src_name/test${i}.txt 1>>${target_name}/test${i}_asm.asm 2>>${target_name}/test${i}_asm.asm
+            elif [[ $st_flag == 0 && $sa_flag == 0 && $ir_flag == 1 ]];then
+                if [ $(find ./ -name ${target_name} | wc -l) == 0 ];then
+                    mkdir ${target_name}
+                fi
                 ./parser ${args} ./$src_name/test${i}.txt 1>>${target_name}/test${i}_ir.ir 2>>${target_name}/test${i}_ir.ir
-            else
-                ./parser ${args} ./$src_name/test${i}.txt 1>>${target_name}/test${i}_st_ir.txt 2>>${target_name}/test${i}_st_ir.txt
+            elif [[ $st_flag == 0 && $sa_flag == 1 ]];then
+                if [ ${target_name} == "Test_IR" ];then
+                    echo "Change the default storage path: ${target_name} -> Test_SA"
+                    target_name="Test_SA"
+                    rm -rf ${target_name}
+                fi
+                if [ $(find ./ -name ${target_name} | wc -l) == 0 ];then
+                    mkdir ${target_name}
+                fi
+                ./parser ${args} ./$src_name/test${i}.txt 1>>${target_name}/test${i}_sa.txt 2>>${target_name}/test${i}_sa.txt
+            elif [[ $st_flag == 1 && $sa_flag == 1 ]];then
+                if [ ${target_name} == "Test_IR" ];then
+                    echo "Change the default storage path: ${target_name} -> Test_ST_SA"
+                    target_name="Test_ST_SA"
+                    rm -rf ${target_name}
+                fi
+                if [ $(find ./ -name ${target_name} | wc -l) == 0 ];then
+                    mkdir ${target_name}
+                fi
+                ./parser ${args} ./$src_name/test${i}.txt 1>>${target_name}/test${i}_st_sa.txt 2>>${target_name}/test${i}_st_sa.txt
+            elif [[ $st_flag == 1 && $sa_flag == 0 ]];then
+                if [ ${target_name} == "Test_IR" ];then
+                    echo "Change the default storage path: ${target_name} -> Test_ST"
+                    target_name="Test_ST"
+                    rm -rf ${target_name}
+                fi
+                if [ $(find ./ -name ${target_name} | wc -l) == 0 ];then
+                    mkdir ${target_name}
+                fi
+                ./parser ${args} ./$src_name/test${i}.txt 1>>${target_name}/test${i}_st.txt 2>>${target_name}/test${i}_st.txt
+            else 
+                echo "None results have been generated."
             fi
         done
     fi
