@@ -114,7 +114,7 @@ MIPS_INSTR* Gen_MIPS_3_Op_Instr(MIPS_INSTR_TYPE instr_type, MIPS_OP* op1, MIPS_O
 
 /* Link new instruction node to the end of the MIPS_Instr list */
 MIPS_INSTR* Add_MIPS_Instr(MIPS_INSTR* instr){
-    if (asm_list_head!=NULL){
+    if (asm_list_head == NULL){
         instr->next = instr->prev = NULL;
         asm_list_head = asm_list_tail = instr;
     }
@@ -128,7 +128,10 @@ MIPS_INSTR* Add_MIPS_Instr(MIPS_INSTR* instr){
 
 /* Generate the MIPS instructions and output to files */
 void Asm_MIPS_Generation(FILE *file){
-    fprintf(file, "%s", MIPS_common_header);
+    if (file != NULL)
+        fprintf(file, "%s", MIPS_common_header);
+    else
+        printf("%s", MIPS_common_header);
 
     /* First generate the 0~31 register operands */
     int idx = 0;
@@ -244,10 +247,9 @@ void Asm_Translatation(IRCode* ir){
     /* Special treatment for ir_code: *a=b */
     if (ir->kind == IR_ASSIGN && ir->dst->modifier == OP_MDF_DEREFERENCE){
         int offset = Get_Var_Offset(ir->dst->kind, ir->dst->var_label_num);
-        /* TODO: Simplify */
         Add_MIPS_Instr(Gen_MIPS_3_Op_Instr(MIPS_LW, reg_operand[REG_T1], \
             Gen_MIPS_Reg_Addr_Operand(MIPS_OP_ADDR, REG_FP, offset), NULL));
-        Gen_MIPS_Load(ir->src, REG_T2);
+        Gen_MIPS_Load(ir->merged_src, REG_T2);
         Add_MIPS_Instr(Gen_MIPS_3_Op_Instr(MIPS_SW, reg_operand[REG_T2], \
             Gen_MIPS_Reg_Addr_Operand(MIPS_OP_ADDR, REG_T1, 0), NULL));
         
@@ -267,15 +269,17 @@ void Asm_Translatation(IRCode* ir){
         Gen_MIPS_Load(ir->src, REG_T1);
 
     /* Load src1 to t2, src2 to t3 if needed */
-    if (ir->kind != IR_CALL && ir->src1 != NULL){
-        if (Find_Variable(ir->src1->kind, ir->src1->var_label_num) == false)
-            Add_Local_Var(ir->src1->kind, ir->src1->var_label_num);
-        Gen_MIPS_Load(ir->src1, REG_T2);
-    }
-    if (ir->src2 != NULL){
-        if (Find_Variable(ir->src2->kind, ir->src2->var_label_num) == false)
-            Add_Local_Var(ir->src2->kind, ir->src2->var_label_num);
-        Gen_MIPS_Load(ir->src2, REG_T3);
+    if (ir->kind != IR_CALL){
+        if (ir->src1 != NULL){
+            if (Find_Variable(ir->src1->kind, ir->src1->var_label_num) == false)
+                Add_Local_Var(ir->src1->kind, ir->src1->var_label_num);
+            Gen_MIPS_Load(ir->src1, REG_T2);  
+        }
+        if (ir->src2 != NULL){
+            if (Find_Variable(ir->src2->kind, ir->src2->var_label_num) == false)
+                Add_Local_Var(ir->src2->kind, ir->src2->var_label_num);
+            Gen_MIPS_Load(ir->src2, REG_T3);
+        }
     }
 
     /* Translate other intermediate representation code */
@@ -334,7 +338,7 @@ void Asm_Translatation(IRCode* ir){
                 case RELOP_LE:  branch_type = MIPS_BLE; break;
             }
             memset(buffer, '\0', sizeof(buffer));
-            sprintf(buffer, "label%d", ir->src->var_label_num);
+            sprintf(buffer, "label%d", ir->dst->var_label_num);
             Add_MIPS_Instr(Gen_MIPS_3_Op_Instr(branch_type, reg_operand[REG_T2], reg_operand[REG_T3], \
                 Gen_MIPS_Label_Operand(MIPS_OP_LABEL, strdup(buffer))));
             break;
@@ -434,9 +438,10 @@ void Print_MIPS_ASM(FILE* file, MIPS_INSTR* instr){
         if (instr->op1 != NULL)
             printf(" %s", MIPS_Operand(instr->op1));
         if (instr->op2 != NULL)
-            printf(" %s", MIPS_Operand(instr->op2));
+            printf(", %s", MIPS_Operand(instr->op2));
         if (instr->op3 != NULL)
-            printf(" %s", MIPS_Operand(instr->op2));
+            printf(", %s", MIPS_Operand(instr->op3));
+        printf("\n");
     }
     else{
         if (instr->kind == MIPS_LABEL){
@@ -447,8 +452,9 @@ void Print_MIPS_ASM(FILE* file, MIPS_INSTR* instr){
         if (instr->op1 != NULL)
             fprintf(file, " %s", MIPS_Operand(instr->op1));
         if (instr->op2 != NULL)
-            fprintf(file, " %s", MIPS_Operand(instr->op2));
+            fprintf(file, ", %s", MIPS_Operand(instr->op2));
         if (instr->op3 != NULL)
-            fprintf(file, " %s", MIPS_Operand(instr->op2));
+            fprintf(file, ", %s", MIPS_Operand(instr->op3));
+        fprintf(file, "\n");
     }
 }
