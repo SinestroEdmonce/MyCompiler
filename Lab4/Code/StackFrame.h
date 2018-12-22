@@ -59,17 +59,37 @@ Local_Var* Dec_Local_Var(OP_TYPE op_type, int num, int size){
     Local_Var* lvar = malloc(sizeof(Local_Var));
     lvar->kind = op_type;
     lvar->num = num;
-    lvar->offset = frame->var_offset;
-    lvar->next = frame->variable;
 
+    /* The stack frame structure can be described below, when there declares a local arrary 
+     * Below is the stack frame:
+     * 
+     * ______________________   __> High Address
+     * |________arg3________|    
+     * |________arg2________|   __> %fp+4 eg. store the arg1 :%fp->0x44
+     * |________arg1________|   __> %fp eg. store the old %fp :%fp->0x40 
+     * |_______old %fp______|   __> %fp-4 eg. store the old %ra :$fp->0x36 
+     * |________$ra_________|   __> %fp-8 eg. store the tempvar1 :$fp->0x32
+     * |______tempvar1______|   __> %fp-12 eg. store the tmp[2] :$fp->0x28 :Current_Var_Offset
+     * |_______tmp[2]_______|   __> %fp-16 eg. store the tmp[1] :$fp->0x24
+     * |_______tmp[1]_______|   __> %fp-20 eg. store the tmp[0] :$fp->0x20
+     * |_______tmp[0]_______|   __> %fp-24 eg. store other variables :$fp->0x16
+     * |________..._________|   __> Low Address
+     * 
+     * So we can see that if there declares a local array, 
+     * it should be stored in the memory location: (Current_Var_Offset - declared_size + 4) 
+     * For example, the array named 'tmp' has a size of 3*4, so it should be stored in Current_Var_Offset - 8,
+     * which equals to 0x20, and the tmp[0] will be stored in 0x20
+     */
     frame->var_offset = frame->var_offset-size;
+    lvar->offset = frame->var_offset+4;
+    lvar->next = frame->variable;
     frame->variable = lvar;
     return lvar;
 }
 
 Local_Var* Find_Variable(OP_TYPE kind, int num){
-    assert(frame!=NULL);
-
+    assert(frame != NULL);
+    
     for(Local_Var* pt=frame->variable;pt!=NULL;pt=pt->next){
         if (pt->kind==kind && pt->num==num)
             return pt;
@@ -86,7 +106,7 @@ int Get_Var_Offset(OP_TYPE kind, int num){
 }
 
 void Release_Frame(){
-    assert(frame!=NULL);
+    assert(frame != NULL);
     
     while(frame->variable!=NULL){
         Local_Var* temp = frame->variable;
