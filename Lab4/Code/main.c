@@ -8,6 +8,7 @@
 #include "SymbolTable.h"
 #include "Semantic.h"
 #include "Translate.h"
+#include "MIPS_ASMgeneration.h"
 
 extern FILE* yyin;
 extern void yyrestart(FILE *input_file);
@@ -72,7 +73,7 @@ Args* Args_Parser(int argc, char** argv){
             args->mode.flag_enable_dag_optimized = true;
         else if (strcmp(argv[idx], "-ir") == 0)
             args->mode.flag_only_translate_ir_code = true;
-        else if (strcmp(argv[idx], "-p") == 0)
+        else if (strcmp(argv[idx], "-a") == 0)
             args->mode.flag_generate_assembly_code = true;
         else if (argv[idx][0] != '-'){
             if (args->in_file == NULL)
@@ -120,6 +121,7 @@ int main(int argc, char** argv){
                 semantic_errors = 0;
                 Semantic_Analysis();
                 Check_Declared_Func();
+                return 0;
             }
             if (args->mode.flag_only_translate_ir_code){
                 semantic_errors = 0;
@@ -128,6 +130,9 @@ int main(int argc, char** argv){
                 if (semantic_errors == 0){
                     Reset_All();   
                     Translate_Analysis();
+                    if (!args->mode.flag_enable_dag_optimized)
+                        printf("Error: DAG Optimization has not been implemented yet.\n");
+
                     if (args->out_file != NULL){
                         FILE* out = fopen(args->out_file, "a+");
                         Print_IR_Code_List(out);
@@ -136,13 +141,28 @@ int main(int argc, char** argv){
                     else
                         Print_IR_Code_List(NULL);
                 }
+                return 0;
             }
             if (args->mode.flag_generate_assembly_code){
                 semantic_errors = 0;
                 Semantic_Analysis();
                 Check_Declared_Func();
                 
-                printf("Error: Assembly Code Generation has not been completed yet.");
+                if (semantic_errors == 0){
+                    Reset_All();   
+                    Translate_Analysis();
+                    if (!args->mode.flag_enable_dag_optimized)
+                        printf("Error: DAG Optimization has not been implemented yet.\n");
+
+                    if (args->out_file != NULL){
+                        FILE* out = fopen(args->out_file, "a+");
+                        Asm_MIPS_Generation(out);
+                        fclose(out);
+                    }
+                    else
+                        Asm_MIPS_Generation(NULL);
+                }
+                return 0;
             }
         }      
         return 0;
