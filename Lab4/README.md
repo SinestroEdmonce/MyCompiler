@@ -96,19 +96,17 @@
 
 - 解决朴素寄存器分配法中的难点需要找到合适的基地址寄存器，譬如``$fp``，由于在产生新的活动记录（栈帧）时``$fp``的值保持不变，所以以它为基地址比较方便，并且容易寻址其他变量。基本的解决思路如下，具体见代码实现。
 
-    ```cpp
-            ______________________  _________> High Address  
-            |________..._________|  
-            |________arg2________|  _________> $fp+4 eg. store the arg1 :$fp->0x44  
-            |________arg1________|  _________> $fp eg. store the old $fp :$fp->0x40  
-            |_______old $fp______|  _________> $fp-4 eg. store the old $ra :$fp->0x36  
-            |________$ra_________|  _________> $fp-8 eg. store the tempvar1 :$fp->0x32
-            |______tempvar1______|  _________> $fp-12 eg. store the tmp[2] :$fp->0x28
-            |_______tmp[2]_______|  _________> $fp-16 eg. store the tmp[1] :$fp->0x24  
-            |_______tmp[1]_______|  _________> $fp-20 eg. store the tmp[0] :$fp->0x20  
-            |_______tmp[0]_______|  _________> $fp-24 eg. store other variables :$fp->0x16  
-            |________..._________|  _________> Low Address
-    ```  
+        ____________________  _> High Address  
+        |_______...________|  
+        |_______arg2_______|  _> $fp+4 eg. store the arg1 :$fp->0x44  
+        |_______arg1_______|  _> $fp eg. store the old $fp :$fp->0x40  
+        |______old $fp_____|  _> $fp-4 eg. store the old $ra :$fp->0x36  
+        |_______$ra________|  _> $fp-8 eg. store the tempvar1 :$fp->0x32
+        |_____tempvar1_____|  _> $fp-12 eg. store the tmp[2] :$fp->0x28
+        |______tmp[2]______|  _> $fp-16 eg. store the tmp[1] :$fp->0x24  
+        |______tmp[1]______|  _> $fp-20 eg. store the tmp[0] :$fp->0x20  
+        |______tmp[0]______|  _> $fp-24 eg. store others :$fp->0x16  
+        |_______...________|  _> Low Address 
 
 ## 编译及运行方法
 
