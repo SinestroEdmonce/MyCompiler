@@ -3,45 +3,60 @@
 
 #define LEAF_NODE -1
 
-static struct map_operand_node *map_head;
+static OperandNodeMap *map_head;
 
-static void insert_dag_node(struct dag_node_list **phead, struct dag_node* node) {
+static void Insert_DAG_Node(DAG_NodeList **phead, DAG_Node *dag_node) {
     if (*phead == NULL) {
-        *phead = new(struct dag_node_list, node, NULL);
+        *phead = malloc(sizeof(DAG_NodeList));
+        (*phead)->dag_node = dag_node;
+        (*phead)->next = NULL;
     } else {
-        struct dag_node_list *t = new(struct dag_node_list, node, *phead);
-        *phead = t;
+        DAG_NodeList *temp = malloc(sizeof(DAG_NodeList));
+        temp->dag_node = dag_node;
+        temp->next = (*phead);
     }
 }
 
-bool operand_equal(struct ir_operand *a, struct ir_operand *b) {
-    return a->kind == b->kind && \
-           a->modifier == b->modifier && \
-           a->no == b->no;
+bool Is_Operand_Equal(IROperand *fst, IROperand *sec) {
+    if (fst->kind == sec->kind 
+    && fst->modifier == sec->modifier 
+    && fst->var_label_num == sec->var_label_num) {
+        return true;
+    }
+    else {
+        return false;
+    }
 }
 
-static struct dag_node *find_dag_node(struct ir_operand *op) {
-    struct map_operand_node *p;
-    for (p = map_head; p; p = p->next) {
-        if (operand_equal(op, p->op)) return p->node;
+static DAG_Node* Find_DAG_Node(IROperand *operand) {
+    OperandNodeMap *pt;
+    for (pt = map_head; pt!=NULL; pt = pt->next) {
+        if (Is_Operand_Equal(operand, pt->operand)){
+            return pt->dag_node;
+        }
     }
     return NULL;
 }
 
-static void map(struct ir_operand *op, struct dag_node *node) {
-    struct map_operand_node *p;
-    for (p = map_head; p; p = p->next) {
-        if (operand_equal(op, p->op)) {
-            p->node = node;
+static void map(IROperand *operand, DAG_Node *dag_node) {
+    OperandNodeMap *pt;
+    for (pt = map_head; pt!=NULL; pt = pt->next) {
+        if (Is_Operand_Equal(operand, pt->operand)){
+            pt->dag_node = dag_node;
             return;
         }
     }
-    struct map_operand_node *m = new(struct map_operand_node, op, node, NULL);
+
+    OperandNodeMap *map = malloc(sizeof(OperandNodeMap));
+    map->dag_node = dag_node;
+    map->operand = operand;
+    map->next = NULL;
     if (map_head == NULL) {
-        map_head = m;
-    } else {
-        m->next = map_head;
-        map_head = m;
+        map_head = map;
+    } 
+    else {
+        map->next = map_head;
+        map_head = map;
     }
 }
 
